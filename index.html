@@ -183,12 +183,13 @@ VIEWS.attempts = async () => {
 };
 
 /* ========== الطلاب ========== */
+const STU = {};
 function studentRows(students, latest) {
-  return students.map((s) => { const a = latest.get(s.id); return `<tr><td>${who(s)}</td><td>${esc(s.centers?.name || "—")}</td><td>${badge(a)}</td><td>${a?.status === "submitted" ? totalOf(a) : "—"}</td>
+  return students.map((s) => { const a = latest.get(s.id); STU[s.id] = s.full_name; return `<tr><td>${who(s)}</td><td>${esc(s.centers?.name || "—")}</td><td>${badge(a)}</td><td>${a?.status === "submitted" ? totalOf(a) : "—"}</td>
   <td><div class="row">${!a || a.status === "submitted" ? `<button class="btn sm" onclick="openAttempt('${s.id}')">${a ? "فتح محاولة جديدة" : "فتح محاولة"}</button>` : ""}
   ${a?.status === "submitted" ? `<button class="btn sm alt" onclick="reopen('${a.id}')">إعادة فتح للتكملة</button>` : ""}
   ${a && a.status !== "in_progress" ? `<button class="btn sm danger" onclick="delAttempt('${a.id}')">حذف المحاولة</button>` : ""}
-  ${a ? `<button class="btn sm ghost" onclick="grade('${a.id}')">عرض</button>` : ""}</div></td></tr>`; }).join("") || `<tr><td colspan="5" class="empty">لا يوجد طلاب</td></tr>`;
+  ${a ? `<button class="btn sm ghost" onclick="grade('${a.id}')">عرض</button>` : ""}${me.role === "admin" ? `<button class="btn sm danger" onclick="delStudent('${s.id}')">🗑️ حذف الحساب</button>` : ""}</div></td></tr>`; }).join("") || `<tr><td colspan="5" class="empty">لا يوجد طلاب</td></tr>`;
 }
 VIEWS.students = async () => {
   const { students, latest } = await base();
@@ -204,6 +205,14 @@ async function openAll() {
   const { students, latest } = await base(); let n = 0;
   for (const s of students) if (!latest.get(s.id)) { const { error } = await sb.rpc("open_attempt", { p_student: s.id }); if (!error) n++; }
   toast(`✓ تم فتح ${n} محاولة`); render();
+}
+async function delStudent(id) {
+  const v = await ask("حذف حساب الطالب نهائيًا", "<b>" + esc(STU[id] || "") + "</b><br>هيتحذف الحساب وكل محاولاته وإجاباته ودرجاته ولا يمكن التراجع.<br>اكتب كلمة <b>حذف</b> للتأكيد:", "");
+  if (v === null) return;
+  if (v.trim() !== "حذف") return alert("لم تكتب كلمة حذف - تم الإلغاء");
+  const { error } = await sb.rpc("delete_student", { p_student: id });
+  if (error) alert(error.message.includes("function") ? "شغّل ملف delete-student.sql في Supabase أولًا" : error.message); else toast("✓ تم حذف الحساب نهائيًا");
+  render();
 }
 async function reopen(id) { const m = await ask("إعادة فتح المحاولة", "كام دقيقة تضيف للطالب علشان يكمل؟", "30"); if (m && Number(m) > 0) act(sb.rpc("reopen_attempt", { p_attempt: id, p_minutes: Number(m) })); }
 async function delAttempt(id) { if (await ask("حذف المحاولة", "هتتحذف المحاولة وكل إجاباتها نهائيًا.", "", false)) act(sb.from("attempts").delete().eq("id", id)); }
