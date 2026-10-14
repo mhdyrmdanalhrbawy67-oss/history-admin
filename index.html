@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة التحكم - امتحان التاريخ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f1ea;--ink:#1c2233;--mute:#6b7280;--line:#e8e2d4;--brand:#6d1a2a;--brand2:#9b2c3f;--gold:#c8a24a;--gold2:#f3e3b3;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--blue:#2a4fb4;--sh:0 8px 26px rgba(60,20,30,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Segoe UI",Tahoma,Arial,sans-serif;line-height:1.7;font-size:16px}
+a{color:var(--brand)}
+input,select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:11px;font:inherit;background:#fff;color:var(--ink);transition:.15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand2);box-shadow:0 0 0 4px rgba(155,44,63,.12)}
+label.l{display:block;font-size:13.5px;font-weight:700;color:#4b5563;margin:12px 0 5px}
+.btn{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:0;border-radius:11px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;transition:.15s;box-shadow:0 5px 14px rgba(109,26,42,.22);white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}.btn.alt{background:#fff;color:var(--brand);border:1.5px solid var(--brand);box-shadow:none}.btn.sm{padding:5px 12px;font-size:13.5px}.btn.danger{background:linear-gradient(135deg,#991b1b,#dc2626)}.btn.ghost{background:#f3eee3;color:var(--ink);box-shadow:none}.btn:disabled{opacity:.5}
+.err{color:var(--bad)}
+/* login */
+.lg{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#4a0f1b,#6d1a2a 55%,#8c2638)}
+.lg .box{background:#fff;border-radius:22px;padding:32px;width:100%;max-width:410px;box-shadow:0 30px 70px rgba(0,0,0,.35)}.lg h2{margin:0 0 4px;color:var(--brand);font-size:26px}
+/* shell */
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.side{background:linear-gradient(180deg,#3d0c17,#6d1a2a);color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;gap:12px;align-items:center;padding:6px 10px 18px;border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:10px}.brand b{width:42px;height:42px;border-radius:12px;background:var(--gold);color:#3d0c17;display:grid;place-items:center;font-size:22px}.brand div{line-height:1.3}.brand small{color:#e7c9cf;font-size:12.5px}
+.side a{display:flex;gap:12px;align-items:center;padding:11px 14px;border-radius:12px;color:#f5e6e9;cursor:pointer;font-weight:500;transition:.12s}.side a:hover{background:rgba(255,255,255,.1)}.side a.on{background:linear-gradient(90deg,rgba(200,162,74,.28),rgba(200,162,74,.1));color:#fff;border:1px solid rgba(200,162,74,.45)}.side a i{font-style:normal;width:22px;text-align:center}
+.side .me{margin-top:auto;background:rgba(255,255,255,.08);border-radius:14px;padding:12px;font-size:14px}
+.main{padding:24px 28px;max-width:1250px;width:100%}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.ph h1{margin:0;font-size:27px;color:var(--brand)}.ph p{margin:0;color:var(--mute)}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:var(--sh)}.card h3{margin:0 0 14px;font-size:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--sh);display:flex;gap:14px;align-items:center;cursor:pointer;transition:.15s}.kpi:hover{transform:translateY(-2px)}
+.kpi .ic{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;font-size:24px}.kpi b{display:block;font-size:30px;line-height:1.1}.kpi span{color:var(--mute);font-size:14px}
+.cols{display:grid;grid-template-columns:1fr 1.3fr;gap:18px}.cols3{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}th{background:#faf7ef;color:var(--mute);font-weight:700;font-size:13.5px;position:sticky;top:0}tr:hover td{background:#fdfaf3}.scroll{overflow-x:auto;max-height:72vh}
+.badge{padding:3px 12px;border-radius:99px;font-size:13px;font-weight:700;white-space:nowrap;display:inline-block}.b-in{background:#fff1da;color:var(--warn)}.b-done{background:#dff5e7;color:var(--ok)}.b-new{background:#e6edfd;color:var(--blue)}.b-none{background:#eee;color:#777}
+.av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#e0bf6a);color:#3d0c17;font-weight:800;display:grid;place-items:center;flex:none}.who{display:flex;gap:11px;align-items:center}.who small{color:var(--mute)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.tools>*{flex:0 1 auto}
+.bars .r{display:grid;grid-template-columns:110px 1fr 38px;gap:10px;align-items:center;margin:9px 0;font-size:14px}.bars .t{height:12px;background:#f1ece0;border-radius:9px;overflow:hidden}.bars .t i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--brand2));border-radius:9px}
+.hist{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:10px}.hist div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:12px;color:var(--mute)}.hist i{width:100%;background:linear-gradient(180deg,var(--brand2),var(--brand));border-radius:8px 8px 0 0;min-height:3px;display:block}.hist b{color:var(--ink);font-size:13px}
+.legend{display:grid;gap:8px;font-size:14px}.legend span{display:flex;align-items:center;gap:8px}.legend i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.donutw{display:flex;gap:22px;align-items:center;flex-wrap:wrap;justify-content:center}
+.q{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;background:#fff}.ans{background:#fffaf0;border:1px dashed #e0cf9b;border-radius:11px;padding:12px;white-space:pre-wrap}.model{background:#eef8f1;border:1px dashed #8fcfa5;border-radius:11px;padding:12px;white-space:pre-wrap;margin-top:8px}
+.right{color:var(--ok);font-weight:700}.wrong{color:var(--bad)}
+.toast{position:fixed;bottom:18px;left:18px;background:#1f2937;color:#fff;padding:12px 20px;border-radius:12px;z-index:99;display:none;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.modal{position:fixed;inset:0;background:rgba(20,10,15,.55);display:grid;place-items:center;z-index:90;padding:16px;backdrop-filter:blur(3px)}.modal>div{background:#fff;border-radius:18px;padding:24px;max-width:400px;width:100%;box-shadow:0 30px 60px rgba(0,0,0,.35)}.modal h3{margin:0 0 10px;color:var(--brand)}.modal .r{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.empty{text-align:center;color:var(--mute);padding:30px}
+@media(max-width:980px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;padding:12px}.brand{border:0;padding:4px}.side .me{display:none}.main{padding:16px}.cols,.cols3{grid-template-columns:1fr}}
+@media print{.side,.tools,.btn{display:none!important}.app{display:block}}
+</style>
+</head>
+<body>
+<div id="app"></div><div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const sb = supabase.createClient("https://ejutbpumrnvuoftvwais.supabase.co", "sb_publishable_whwX3xnNzZcNbs90ejhEGA_SiA-gPgZ");
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const LET = ["أ", "ب", "ج", "د"], AR = "٠١٢٣٤٥٦٧٨٩";
+const digits = (s) => String(s || "").replace(/[٠-٩]/g, (d) => AR.indexOf(d)).replace(/\D/g, "");
+const toLogin = (v) => { v = v.trim(); return v.includes("@") ? v.toLowerCase() : digits(v) + "@student.exam.app"; };
+const contact = (s) => s.phone || (s.email && !s.email.endsWith("@student.exam.app") ? s.email : "") || "—";
+const fdate = (d) => (d ? new Date(d).toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" }) : "—");
+const init = (n) => esc((n || "؟").trim().charAt(0));
+let me = null, tab = "overview", filters = { center: "", status: "", q: "", openCenter: "" }, MAX = null;
+function toast(t) { const e = $("#toast"); e.textContent = t; e.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = "none"), 2600); }
+function ask(title, body, def, withInput = true) {
+  return new Promise((res) => {
+    const m = document.createElement("div"); m.className = "modal";
+    m.innerHTML = `<div><h3>${title}</h3><div>${body}</div>${withInput ? `<input id="mi" value="${esc(def)}" style="margin-top:10px">` : ""}<div class="r"><button class="btn alt" data-k="0">إلغاء</button><button class="btn" data-k="1">تأكيد</button></div></div>`;
+    m.onclick = (e) => { const b = e.target.closest("button"); if (!b) return; const v = withInput ? $("#mi").value : true; m.remove(); res(b.dataset.k === "1" ? v : null); };
+    document.body.appendChild(m); if (withInput) $("#mi").focus();
+  });
+}
+const totalOf = (a) => (a ? Number(a.total_override ?? Number(a.mcq_score || 0) + Number(a.essay_score || 0) + Number(a.adjustment || 0)) : 0);
+const statusKey = (a) => (!a ? "none" : a.status === "submitted" ? (a.graded ? "graded" : "submitted") : a.status);
+const STATUS = { none: ["لم تُفتح محاولة", "b-none", "#9ca3af"], not_started: ["مفتوحة - لم يبدأ", "b-new", "#2a4fb4"], in_progress: ["جارٍ الحل", "b-in", "#d97706"], submitted: ["بانتظار التصحيح", "b-in", "#c8a24a"], graded: ["تم التصحيح", "b-done", "#15803d"] };
+const badge = (a) => { const [t, c] = STATUS[statusKey(a)]; return `<span class="badge ${c}">${t}</span>`; };
+const who = (s) => `<div class="who"><div class="av">${init(s.full_name)}</div><div>${esc(s.full_name)}<br><small>${esc(contact(s))}</small></div></div>`;
+
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return loginView();
+  const { data: p } = await sb.from("profiles").select("id,full_name,role").eq("id", session.user.id).single();
+  if (!p || !["teacher", "admin"].includes(p.role)) { await sb.auth.signOut(); return loginView("هذا الحساب ليس مدرسًا أو أدمن"); }
+  me = p; render();
+}
+function loginView(msg = "") {
+  $("#app").innerHTML = `<div class="lg"><div class="box"><div style="font-size:42px">🎓</div><h2>لوحة التحكم</h2><p style="color:var(--mute);margin:0 0 8px">امتحان التاريخ - الوحدة الثانية</p>
+  <label class="l">رقم الموبايل أو الإيميل</label><input id="em" dir="ltr"><label class="l">كلمة المرور</label><input id="pw" type="password" dir="ltr">
+  <p class="err" id="er" style="min-height:22px">${esc(msg)}</p><button class="btn" id="go" style="width:100%;padding:13px">دخول</button></div></div>`;
+  const go = async () => {
+    $("#go").disabled = true;
+    const { error } = await sb.auth.signInWithPassword({ email: toLogin($("#em").value), password: $("#pw").value });
+    if (error) { $("#er").textContent = "بيانات الدخول غير صحيحة"; $("#go").disabled = false; return; }
+    boot();
+  };
+  $("#go").onclick = go; $("#pw").onkeydown = (e) => e.key === "Enter" && go();
+}
+async function logout() { await sb.auth.signOut(); location.reload(); }
+
+const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
+function shell(title, sub, html, actions = "") {
+  const admin = me.role === "admin";
+  $("#app").innerHTML = `<div class="app"><aside class="side"><div class="brand"><b>📜</b><div><b style="background:none;width:auto;height:auto;display:block;color:#fff;font-size:17px">لوحة المالك</b><small>امتحان التاريخ • الوحدة 2</small></div></div>
+  ${TABS.filter((t) => !t[3] || admin).map((t) => `<a class="${tab === t[0] ? "on" : ""}" onclick="go('${t[0]}')"><i>${t[1]}</i>${t[2]}</a>`).join("")}
+  <div class="me"><b>${esc(me.full_name)}</b><br><small>${admin ? "أدمن" : "مدرس"}</small><br><button class="btn alt sm" style="margin-top:8px" onclick="logout()">تسجيل خروج</button></div></aside>
+  <main class="main"><div class="ph"><div><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ""}</div><div class="row">${actions}</div></div>${html}</main></div>`;
+}
+function go(k) { tab = k; render(); }
+const VIEWS = {};
+async function render() {
+  shell("جارٍ التحميل...", "", "<div class='card empty'>⏳</div>");
+  try { const r = await VIEWS[tab](); shell(r.title, r.sub, r.html, r.actions); if (r.after) r.after(); } catch (e) { shell("خطأ", "", `<div class="card err">${esc(e.message)}</div>`); }
+}
+async function base() {
+  const [s, a, c, q] = await Promise.all([
+    sb.from("profiles").select("id,full_name,phone,email,center_id,centers(name)").eq("role", "student").order("full_name"),
+    sb.from("attempts").select("*").order("created_at", { ascending: false }),
+    sb.from("centers").select("id,name").order("name"),
+    MAX === null ? sb.from("questions").select("marks") : Promise.resolve({ data: null }),
+  ]);
+  for (const r of [s, a, c, q]) if (r.error) throw r.error;
+  if (q.data) MAX = q.data.reduce((x, y) => x + Number(y.marks), 0);
+  const latest = new Map(); a.data.forEach((x) => { if (!latest.has(x.student_id)) latest.set(x.student_id, x); });
+  return { students: s.data, attempts: a.data, centers: c.data, latest };
+}
+
+/* ========== نظرة عامة ========== */
+function donut(parts) {
+  const tot = parts.reduce((s, p) => s + p.v, 0) || 1; let acc = 0; const R = 54, C = 2 * Math.PI * R;
+  const segs = parts.filter((p) => p.v).map((p) => { const len = (p.v / tot) * C, o = -acc; acc += len; return `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${p.c}" stroke-width="22" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${o}" transform="rotate(-90 70 70)"/>`; }).join("");
+  return `<svg width="150" height="150" viewBox="0 0 140 140"><circle r="${R}" cx="70" cy="70" fill="none" stroke="#f1ece0" stroke-width="22"/>${segs}<text x="70" y="68" text-anchor="middle" font-size="26" font-weight="800" fill="#6d1a2a">${tot === 1 && !parts.some((p) => p.v) ? 0 : tot}</text><text x="70" y="88" text-anchor="middle" font-size="11" fill="#6b7280">طالب</text></svg>`;
+}
+VIEWS.overview = async () => {
+  const { students, centers, latest } = await base();
+  const keys = Object.keys(STATUS), cnt = Object.fromEntries(keys.map((k) => [k, students.filter((s) => statusKey(latest.get(s.id)) === k).length]));
+  const done = students.map((s) => latest.get(s.id)).filter((a) => a && a.status === "submitted");
+  const scores = done.map(totalOf), avg = scores.length ? (scores.reduce((x, y) => x + y, 0) / scores.length).toFixed(1) : "—", best = scores.length ? Math.max(...scores) : "—";
+  const bk = 8, step = Math.max(1, Math.ceil((MAX || 100) / bk)), hist = Array(bk).fill(0); scores.forEach((v) => (hist[Math.min(bk - 1, Math.floor(v / step))]++));
+  const hm = Math.max(1, ...hist);
+  const cs = centers.map((c) => ({ n: c.name, v: students.filter((s) => s.center_id === c.id).length })), noC = students.filter((s) => !s.center_id).length; if (noC) cs.push({ n: "بدون سنتر", v: noC });
+  const cm = Math.max(1, ...cs.map((c) => c.v));
+  const recent = done.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at)).slice(0, 6);
+  const sm = Object.fromEntries(students.map((s) => [s.id, s]));
+  const kp = (ic, bg, n, l, k) => `<div class="kpi" ${k ? `onclick="filters.status='${k}';go('attempts')"` : ""}><div class="ic" style="background:${bg}">${ic}</div><div><b>${n}</b><span>${l}</span></div></div>`;
+  return { title: "نظرة عامة", sub: "ملخص لحظي لحالة الامتحان", actions: `<button class="btn alt" onclick="render()">🔄 تحديث</button>`,
+    html: `<div class="kpis">${kp("👥", "#f3e3b3", students.length, "إجمالي الطلاب")}${kp("✍️", "#fff1da", cnt.in_progress + cnt.submitted + cnt.graded, "بدأوا الامتحان")}${kp("📥", "#e6edfd", cnt.submitted, "بانتظار التصحيح", "submitted")}${kp("✅", "#dff5e7", cnt.graded, "تم تصحيحهم", "graded")}${kp("🏆", "#f9e0e5", avg, "متوسط الدرجات (الأعلى: " + best + ")")}</div>
+    <div class="cols"><div class="card"><h3>حالة الطلاب</h3><div class="donutw">${donut(keys.map((k) => ({ v: cnt[k], c: STATUS[k][2] })))}<div class="legend">${keys.map((k) => `<span><i style="background:${STATUS[k][2]}"></i>${STATUS[k][0]} <b>${cnt[k]}</b></span>`).join("")}</div></div></div>
+    <div class="card"><h3>توزيع الدرجات ${MAX ? `(من ${MAX})` : ""}</h3>${scores.length ? `<div class="hist">${hist.map((n, i) => `<div><b>${n || ""}</b><i style="height:${(n / hm) * 100}%"></i><span>${i * step}-${i === bk - 1 ? MAX : (i + 1) * step - 1}</span></div>`).join("")}</div>` : `<div class="empty">لسه مفيش تسليمات</div>`}</div></div>
+    <div class="cols3"><div class="card"><h3>الطلاب حسب السنتر</h3><div class="bars">${cs.map((c) => `<div class="r"><span>${esc(c.n)}</span><div class="t"><i style="width:${(c.v / cm) * 100}%"></i></div><b>${c.v}</b></div>`).join("") || `<div class="empty">لا توجد سناتر</div>`}</div></div>
+    <div class="card"><h3>آخر التسليمات</h3>${recent.map((a) => `<div class="who" style="justify-content:space-between;margin:10px 0"><div class="who"><div class="av">${init(sm[a.student_id]?.full_name)}</div><div>${esc(sm[a.student_id]?.full_name)}<br><small>${fdate(a.submitted_at)}</small></div></div><button class="btn sm" onclick="grade('${a.id}')">${a.graded ? "عرض" : "تصحيح"}</button></div>`).join("") || `<div class="empty">لسه مفيش تسليمات</div>`}</div></div>` };
+};
+
+/* ========== المحاولات والتصحيح ========== */
+function csv(rows, name) {
+  const b = new Blob(["\ufeff" + rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; a.click();
+}
+async function exportCsv() {
+  const { students, latest } = await base();
+  csv([["الاسم", "الموبايل", "السنتر", "الحالة", "الاختيارات", "المقالي", "تعديل", "الدرجة النهائية", "وقت التسليم"],
+    ...students.map((s) => { const a = latest.get(s.id); return [s.full_name, contact(s), s.centers?.name || "", STATUS[statusKey(a)][0], a?.mcq_score ?? "", a?.essay_score ?? "", a?.adjustment ?? "", a && a.status === "submitted" ? totalOf(a) : "", a?.submitted_at ? fdate(a.submitted_at) : ""]; })], "نتائج-الامتحان.csv");
+}
+VIEWS.attempts = async () => {
+  const { students, centers, latest } = await base();
+  const q = filters.q.trim().toLowerCase();
+  const rows = students.filter((s) => (!filters.center || s.center_id === filters.center) && (!filters.status || statusKey(latest.get(s.id)) === filters.status) && (!q || [s.full_name, s.phone, s.email].join(" ").toLowerCase().includes(q)));
+  return { title: "المحاولات والتصحيح", sub: `${rows.length} طالب`, actions: `<button class="btn alt" onclick="exportCsv()">⬇️ تصدير النتائج (Excel)</button><button class="btn alt" onclick="window.print()">🖨️ طباعة</button>`,
+    after: () => { $("#fc").onchange = (e) => { filters.center = e.target.value; render(); }; $("#fs").onchange = (e) => { filters.status = e.target.value; render(); }; const i = $("#fq"); i.oninput = () => { filters.q = i.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#fq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; },
+    html: `<div class="card"><div class="tools"><input id="fq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:260px"><select id="fc" style="width:190px"><option value="">كل السناتر</option>${centers.map((c) => `<option value="${c.id}" ${filters.center === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+    <select id="fs" style="width:190px"><option value="">كل الحالات</option>${Object.keys(STATUS).map((k) => `<option value="${k}" ${filters.status === k ? "selected" : ""}>${STATUS[k][0]}</option>`).join("")}</select>
+    <button class="btn ghost sm" onclick="filters={center:'',status:'',q:'',openCenter:''};render()">مسح التصفية</button></div>
+    <div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>بدأ في</th><th>الدرجة</th><th></th></tr></thead><tbody>
+    ${rows.map((s) => { const a = latest.get(s.id); return `<tr><td>${who(s)}</td><td>${esc(s.centers?.name || "—")}</td><td>${badge(a)}</td><td>${fdate(a?.started_at)}</td><td>${a && a.status === "submitted" ? `<b>${totalOf(a)}</b>${MAX ? " / " + MAX : ""}` : "—"}</td>
+    <td>${a && a.status !== "not_started" ? `<button class="btn sm" onclick="grade('${a.id}')">${a.status === "submitted" ? "تصحيح / تعديل" : "عرض"}</button>` : ""}</td></tr>`; }).join("") || `<tr><td colspan="6" class="empty">لا يوجد طلاب مطابقين</td></tr>`}</tbody></table></div></div>` };
+};
+
+/* ========== الطلاب ========== */
+function studentRows(students, latest) {
+  return students.map((s) => { const a = latest.get(s.id); return `<tr><td>${who(s)}</td><td>${esc(s.centers?.name || "—")}</td><td>${badge(a)}</td><td>${a?.status === "submitted" ? totalOf(a) : "—"}</td>
+  <td><div class="row">${!a || a.status === "submitted" ? `<button class="btn sm" onclick="openAttempt('${s.id}')">${a ? "فتح محاولة جديدة" : "فتح محاولة"}</button>` : ""}
+  ${a?.status === "submitted" ? `<button class="btn sm alt" onclick="reopen('${a.id}')">إعادة فتح للتكملة</button>` : ""}
+  ${a && a.status !== "in_progress" ? `<button class="btn sm danger" onclick="delAttempt('${a.id}')">حذف المحاولة</button>` : ""}
+  ${a ? `<button class="btn sm ghost" onclick="grade('${a.id}')">عرض</button>` : ""}</div></td></tr>`; }).join("") || `<tr><td colspan="5" class="empty">لا يوجد طلاب</td></tr>`;
+}
+VIEWS.students = async () => {
+  const { students, latest } = await base();
+  const q = filters.q.trim().toLowerCase(), rows = students.filter((s) => !q || [s.full_name, s.phone, s.email].join(" ").toLowerCase().includes(q));
+  return { title: "الطلاب", sub: `${rows.length} طالب • من هنا تفتح المحاولات`, actions: `<button class="btn" onclick="openAll()">🔓 فتح محاولة لكل من ليس له محاولة</button>`,
+    after: () => { const i = $("#sq"); i.oninput = () => { filters.q = i.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; },
+    html: `<div class="card"><div class="tools"><input id="sq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:300px"></div><div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody>${studentRows(rows, latest)}</tbody></table></div></div>` };
+};
+async function act(p, ok = "✓ تم") { const { error } = await p; if (error) alert(error.message); else toast(ok); render(); }
+const openAttempt = (id) => act(sb.rpc("open_attempt", { p_student: id }), "✓ تم فتح المحاولة");
+async function openAll() {
+  if (!(await ask("فتح محاولات", "هيتم فتح محاولة لكل طالب ليس له محاولة حالية. متأكد؟", "", false))) return;
+  const { students, latest } = await base(); let n = 0;
+  for (const s of students) if (!latest.get(s.id)) { const { error } = await sb.rpc("open_attempt", { p_student: s.id }); if (!error) n++; }
+  toast(`✓ تم فتح ${n} محاولة`); render();
+}
+async function reopen(id) { const m = await ask("إعادة فتح المحاولة", "كام دقيقة تضيف للطالب علشان يكمل؟", "30"); if (m && Number(m) > 0) act(sb.rpc("reopen_attempt", { p_attempt: id, p_minutes: Number(m) })); }
+async function delAttempt(id) { if (await ask("حذف المحاولة", "هتتحذف المحاولة وكل إجاباتها نهائيًا.", "", false)) act(sb.from("attempts").delete().eq("id", id)); }
+
+/* ========== السناتر ========== */
+VIEWS.centers = async () => {
+  const { students, centers, latest } = await base();
+  if (filters.openCenter) {
+    const c = centers.find((x) => x.id === filters.openCenter);
+    if (c) return { title: "سنتر: " + esc(c.name), sub: "", actions: `<button class="btn alt" onclick="filters.openCenter='';render()">← رجوع للسناتر</button>`,
+      html: `<div class="card"><div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody>${studentRows(students.filter((s) => s.center_id === c.id), latest)}</tbody></table></div></div>` };
+  }
+  const stats = centers.map((c) => { const ss = students.filter((s) => s.center_id === c.id), as = ss.map((s) => latest.get(s.id)).filter(Boolean), sc = as.filter((a) => a.status === "submitted").map(totalOf);
+    return { ...c, total: ss.length, started: as.filter((a) => a.status !== "not_started").length, submitted: sc.length, avg: sc.length ? (sc.reduce((x, y) => x + y, 0) / sc.length).toFixed(1) : "—" }; });
+  return { title: "السناتر", sub: "إدارة السناتر وإحصائيات كل سنتر", actions: "",
+    html: `<div class="card"><div class="row"><div style="flex:1;min-width:220px"><label class="l" style="margin-top:0">إضافة سنتر جديد</label><input id="cn" placeholder="اسم السنتر"></div><button class="btn" onclick="addCenter()">➕ إضافة</button></div></div>
+    <div class="card"><div class="scroll"><table><thead><tr><th>السنتر</th><th>الطلاب</th><th>بدأوا</th><th>سلّموا</th><th>متوسط الدرجات</th><th></th></tr></thead><tbody>
+    ${stats.map((c) => `<tr><td><b>🏫 <a href="#" onclick="filters.openCenter='${c.id}';render();return false">${esc(c.name)}</a></b></td><td>${c.total}</td><td>${c.started}</td><td>${c.submitted}</td><td>${c.avg}</td><td><button class="btn sm danger" onclick="delCenter('${c.id}')">حذف</button></td></tr>`).join("") || `<tr><td colspan="6" class="empty">لا توجد سناتر - أضف أول سنتر من فوق</td></tr>`}</tbody></table></div></div>` };
+};
+const addCenter = () => { const n = $("#cn").value.trim(); if (n) act(sb.from("centers").insert({ name: n })); };
+async function delCenter(id) { if (await ask("حذف السنتر", "الطلاب هيفضلوا في النظام بدون سنتر.", "", false)) act(sb.from("centers").delete().eq("id", id)); }
+
+/* ========== المدرسين ========== */
+VIEWS.teachers = async () => {
+  const { data: staff, error } = await sb.from("profiles").select("id,full_name,email,phone,role").in("role", ["teacher", "admin"]).order("role").order("full_name");
+  if (error) throw error;
+  return { title: "المدرسين والأدمن", sub: "المدرس بيعمل حساب عادي من صفحة الطالب، وبعدين تحوّله هنا", actions: "",
+    html: `<div class="card"><div class="row"><div style="flex:1;min-width:230px"><label class="l" style="margin-top:0">رقم موبايل المدرس أو إيميله</label><input id="te" dir="ltr" placeholder="01xxxxxxxxx"></div><div style="width:140px"><label class="l" style="margin-top:0">الصلاحية</label><select id="tr"><option value="teacher">مدرس</option><option value="admin">أدمن</option></select></div><button class="btn" onclick="setRole(toLogin($('#te').value),$('#tr').value)">➕ إضافة</button></div></div>
+    <div class="card"><div class="scroll"><table><thead><tr><th>الاسم</th><th>التواصل</th><th>الصلاحية</th><th></th></tr></thead><tbody>${staff.map((s) => `<tr><td>${who(s)}</td><td dir="ltr" style="text-align:right">${esc(contact(s))}</td><td><span class="badge ${s.role === "admin" ? "b-done" : "b-new"}">${s.role === "admin" ? "أدمن" : "مدرس"}</span></td><td><button class="btn sm danger" onclick="rmStaff('${esc(s.email)}')">إزالة الصلاحية</button></td></tr>`).join("")}</tbody></table></div></div>` };
+};
+async function rmStaff(email) { if (await ask("إزالة الصلاحية", "هيرجع الحساب لطالب عادي.", "", false)) setRole(email, "student"); }
+async function setRole(email, role) {
+  if (!email || email.startsWith("@")) return;
+  const { error } = await sb.rpc("set_user_role", { p_email: email, p_role: role });
+  if (error) alert(error.message.includes("USER_NOT_FOUND") ? "مفيش حساب بالبيانات دي - لازم يسجّل الأول من صفحة الطالب" : error.message); else toast("✓ تم");
+  render();
+}
+
+/* ========== الإعدادات ========== */
+VIEWS.settings = async () => {
+  const { data: s, error } = await sb.from("exam_settings").select("*").eq("id", 1).single(); if (error) throw error;
+  return { title: "إعدادات الامتحان", sub: "", actions: "",
+    html: `<div class="card" style="max-width:640px"><label class="l" style="margin-top:0">عنوان الامتحان</label><input id="st" value="${esc(s.title)}"><label class="l">المدة (بالدقائق)</label><input id="sd" type="number" value="${s.duration_minutes}">
+    <label class="l" style="display:flex;gap:10px;align-items:center;cursor:pointer"><input id="so" type="checkbox" style="width:20px;height:20px" ${s.is_open ? "checked" : ""}> الامتحان مفتوح لكل الطلاب</label>
+    <label class="l" style="display:flex;gap:10px;align-items:center;cursor:pointer"><input id="ss" type="checkbox" style="width:20px;height:20px" ${s.allow_self_start ? "checked" : ""}> السماح للطالب يبدأ بنفسه (لو الامتحان مفتوح)</label>
+    <p style="color:var(--mute)">لو الامتحان مقفول: الطالب مش هيقدر يبدأ إلا لو فتحتله محاولة من صفحة "الطلاب". تغيير المدة بيسري على المحاولات الجديدة فقط.</p><button class="btn" onclick="saveSettings()">💾 حفظ</button></div>` };
+};
+const saveSettings = () => act(sb.from("exam_settings").update({ title: $("#st").value, duration_minutes: Number($("#sd").value), is_open: $("#so").checked, allow_self_start: $("#ss").checked }).eq("id", 1), "✓ تم الحفظ");
+
+/* ========== التصحيح وتعديل الدرجات ========== */
+async function grade(id) {
+  shell("جارٍ التحميل...", "", "<div class='card empty'>⏳</div>");
+  const [{ data: a, error }, { data: qs }, { data: key }, { data: ans }] = await Promise.all([
+    sb.from("attempts").select("*, profiles(full_name,phone,email,centers(name))").eq("id", id).single(),
+    sb.from("questions").select("*").order("position"), sb.from("answer_key").select("*"), sb.from("answers").select("*").eq("attempt_id", id)]);
+  if (error) return shell("خطأ", "", `<div class="card err">${esc(error.message)}</div>`);
+  const K = Object.fromEntries(key.map((k) => [k.question_id, k])), A = Object.fromEntries(ans.map((x) => [x.question_id, x]));
+  const mcq = qs.filter((q) => q.kind === "mcq"), essay = qs.filter((q) => q.kind === "essay"), p = a.profiles || {};
+  const auto = mcq.reduce((s, q) => s + (A[q.id]?.choice === K[q.id]?.correct_option ? Number(q.marks) : 0), 0), mm = mcq.reduce((s, q) => s + Number(q.marks), 0), em = essay.reduce((s, q) => s + Number(q.marks), 0);
+  shell("تصحيح: " + esc(p.full_name), `${esc(contact(p))} • ${esc(p.centers?.name || "بدون سنتر")}`, `
+  <div class="kpis"><div class="kpi"><div class="ic" style="background:#f9e0e5">🏆</div><div><b>${totalOf(a)}</b><span>الدرجة الحالية</span></div></div><div class="kpi"><div class="ic" style="background:#dff5e7">☑️</div><div><b>${auto}/${mm}</b><span>اختيار (تلقائي)</span></div></div><div class="kpi"><div class="ic" style="background:#fff1da">✍️</div><div><b>${a.essay_score}/${em}</b><span>المقالي</span></div></div><div class="kpi"><div class="ic" style="background:#e6edfd">⏱️</div><div><span>بدأ: ${fdate(a.started_at)}<br>سلّم: ${fdate(a.submitted_at)}</span></div></div></div>
+  <div class="card"><h3>تعديل الدرجات يدويًا ${badge(a)}</h3><div class="row"><div style="flex:1;min-width:170px"><label class="l">درجة الاختيارات (تلقائي: ${auto})</label><input id="gm" type="number" step="0.5" value="${a.mcq_score ?? 0}"></div>
+  <div style="flex:1;min-width:150px"><label class="l">تعديل إضافي (+/-)</label><input id="ga" type="number" step="0.5" value="${a.adjustment ?? 0}"></div><div style="flex:1;min-width:190px"><label class="l">درجة نهائية بديلة (اختياري)</label><input id="go" type="number" step="0.5" value="${a.total_override ?? ""}" placeholder="تلغي الحساب"></div></div>
+  <label class="l">ملاحظات</label><input id="gn" value="${esc(a.notes || "")}"><p style="color:var(--mute);margin-bottom:0">المجموع = الاختيارات + المقالي + التعديل، أو الدرجة البديلة لو كتبتها.</p>
+  <div class="row" style="margin-top:12px"><button class="btn" onclick="saveTotals('${id}')">💾 حفظ الدرجات</button><button class="btn alt" onclick="saveTotals('${id}',${!a.graded})">${a.graded ? "إلغاء الاعتماد (إخفاء الدرجة عن الطالب)" : "✅ اعتماد الدرجة وإظهارها للطالب"}</button></div></div>
+  <h3 style="margin:22px 0 12px;color:var(--brand)">الأسئلة المقالية — تصحيح يدوي</h3>
+  ${essay.map((q) => `<div class="q"><div><b>${q.position}.</b> ${esc(q.text)} <span class="badge b-new">من ${q.marks}</span></div><label class="l">إجابة الطالب</label><div class="ans">${esc(A[q.id]?.essay_text || "— لم يُجب —")}</div>
+  <details><summary style="cursor:pointer;margin-top:10px;font-weight:700;color:var(--ok)">📖 نموذج الإجابة من الكتاب</summary><div class="model">${esc(K[q.id]?.model_answer || "")}</div></details>
+  <div class="row" style="margin-top:10px"><div style="width:120px"><label class="l">الدرجة</label><input id="es${q.id}" type="number" step="0.5" min="0" max="${q.marks}" value="${A[q.id]?.essay_score ?? ""}"></div><div style="flex:1;min-width:220px"><label class="l">تعليق للطالب (اختياري)</label><input id="ef${q.id}" value="${esc(A[q.id]?.feedback || "")}"></div><button class="btn sm" onclick="saveEssay('${id}',${q.id},${q.marks})">حفظ</button></div></div>`).join("")}
+  <div class="card"><details><summary style="cursor:pointer;font-weight:700">إجابات الاختيارات (${auto} من ${mm})</summary><div class="scroll"><table style="margin-top:10px"><thead><tr><th>#</th><th>إجابة الطالب</th><th>الصحيحة</th></tr></thead><tbody>
+  ${mcq.map((q) => { const c = A[q.id]?.choice, k = K[q.id]?.correct_option; return `<tr><td>${q.position}</td><td class="${c === k ? "right" : "wrong"}">${c === undefined || c === null ? "— بدون —" : LET[c] + ") " + esc(q.options[c])}</td><td>${LET[k]}) ${esc(q.options[k])}</td></tr>`; }).join("")}</tbody></table></div></details></div>`,
+  `<button class="btn alt" onclick="render()">← رجوع</button>`);
+}
+async function saveEssay(id, qid, max) {
+  const v = $("#es" + qid).value; if (v === "" || Number(v) < 0 || Number(v) > max) return alert(`الدرجة لازم تكون بين 0 و ${max}`);
+  const { error } = await sb.rpc("grade_essay", { p_attempt: id, p_question: qid, p_score: Number(v), p_feedback: $("#ef" + qid).value || null });
+  error ? alert(error.message) : toast("✓ تم حفظ درجة السؤال");
+}
+async function saveTotals(id, graded) {
+  const o = $("#go").value, upd = { mcq_score: Number($("#gm").value || 0), adjustment: Number($("#ga").value || 0), total_override: o === "" ? null : Number(o), notes: $("#gn").value || null };
+  if (graded !== undefined) upd.graded = graded;
+  const { error } = await sb.from("attempts").update(upd).eq("id", id); if (error) return alert(error.message);
+  toast("✓ تم حفظ الدرجات"); grade(id);
+}
+boot();
+</script>
+</body>
+</html>
