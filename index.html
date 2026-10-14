@@ -81,8 +81,14 @@ const who = (s) => `<div class="who"><div class="av">${init(s.full_name)}</div><
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return loginView();
-  const { data: p } = await sb.from("profiles").select("id,full_name,role").eq("id", session.user.id).single();
-  if (!p || !["teacher", "admin"].includes(p.role)) { await sb.auth.signOut(); return loginView("هذا الحساب ليس مدرسًا أو أدمن"); }
+  const { data: p, error: pe } = await sb.from("profiles").select("id,full_name,role").eq("id", session.user.id).maybeSingle();
+  if (!p || !["teacher", "admin"].includes(p.role)) {
+    const em = session.user.email;
+    const why = pe ? "تعذّر قراءة الملف الشخصي: " + pe.message + " (غالبًا ملف supabase.sql لم يكتمل تشغيله)"
+      : !p ? "الحساب (" + em + ") مالوش صف في جدول profiles — شغّل make-admin.sql"
+      : "صلاحية الحساب (" + em + ") الحالية: " + p.role + " — شغّل make-admin.sql بإيميلك";
+    await sb.auth.signOut(); return loginView(why);
+  }
   me = p; render();
 }
 function loginView(msg = "") {
