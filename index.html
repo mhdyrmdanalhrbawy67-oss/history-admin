@@ -47,6 +47,16 @@ table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:11px 10px
 .empty{text-align:center;color:var(--mute);padding:30px}
 @media(max-width:980px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;padding:12px}.brand{border:0;padding:4px}.side .me{display:none}.main{padding:16px}.cols,.cols3{grid-template-columns:1fr}}
 @media print{.side,.tools,.btn{display:none!important}.app{display:block}}
+
+.sup{display:grid;grid-template-columns:370px 1fr;gap:18px;align-items:start}.suplist{padding:14px;max-height:80vh;overflow:auto}
+.ti{display:flex;gap:11px;align-items:center;padding:12px;border-radius:13px;border:1.5px solid transparent;cursor:pointer;margin-bottom:6px;transition:.12s}.ti:hover{background:#fdf8f9}.ti.on{background:#f9e9ec;border-color:var(--brand)}.ti .ci{font-size:24px}.ti .m{flex:1;min-width:0}.ti .m b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ti .m small{color:var(--mute)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.pill{padding:5px 13px;border-radius:99px;background:#f3eee3;cursor:pointer;font-size:14px;font-weight:700;color:#5b5346}.pill.on{background:var(--brand);color:#fff}.pill b{margin-right:4px}
+.s-open{background:#fff1da;color:#b45309}.s-ans{background:#dff5e7;color:#15803d}.s-closed{background:#eee;color:#6b7280}
+.msgs{display:flex;flex-direction:column;gap:12px;max-height:50vh;overflow-y:auto;padding:8px 4px;background:#faf7ef;border-radius:14px;padding:14px}.bub{max-width:84%;padding:12px 16px;border-radius:16px;white-space:pre-wrap;line-height:1.8;word-break:break-word}.bub small{display:block;font-size:12px;opacity:.75;margin-top:4px}
+.bub.stu{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-right-radius:4px}.bub.team{align-self:flex-end;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-bottom-left-radius:4px}
+.nb{background:#dc2626;color:#fff;border-radius:99px;padding:0 9px;font-size:12px;font-weight:700;margin-right:auto;line-height:20px}
+.canned{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.canned button{background:#f3eee3;border:0;border-radius:99px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}.canned button:hover{background:var(--gold2)}
+@media(max-width:980px){.sup{grid-template-columns:1fr}.suplist{max-height:none}}
 </style>
 </head>
 <body>
@@ -105,23 +115,31 @@ function loginView(msg = "") {
 }
 async function logout() { await sb.auth.signOut(); location.reload(); }
 
-const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
+const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["support", "💬", "الدعم والمنتدى"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
 function shell(title, sub, html, actions = "") {
   const admin = me.role === "admin";
   $("#app").innerHTML = `<div class="app"><aside class="side"><div class="brand"><b>📜</b><div><b style="background:none;width:auto;height:auto;display:block;color:#fff;font-size:17px">لوحة المالك</b><small>امتحان التاريخ • الوحدة 2</small></div></div>
-  ${TABS.filter((t) => !t[3] || admin).map((t) => `<a class="${tab === t[0] ? "on" : ""}" onclick="go('${t[0]}')"><i>${t[1]}</i>${t[2]}</a>`).join("")}
+  ${TABS.filter((t) => !t[3] || admin).map((t) => `<a class="${tab === t[0] ? "on" : ""}" onclick="go('${t[0]}')"><i>${t[1]}</i>${t[2]}${t[0] === "support" ? `<span class="nb" id="nb" style="display:none"></span>` : ""}</a>`).join("")}
   <div class="me"><b>${esc(me.full_name)}</b><br><small>${admin ? "أدمن" : "مدرس"}</small><br><button class="btn alt sm" style="margin-top:8px" onclick="logout()">تسجيل خروج</button></div></aside>
   <main class="main"><div class="ph"><div><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ""}</div><div class="row">${actions}</div></div>${html}</main></div>`;
 }
+let lastBadge = 0;
+async function updateBadge() {
+  if (Date.now() - lastBadge < 4000) { return; } lastBadge = Date.now();
+  const { count } = await sb.from("tickets").select("id", { count: "exact", head: true }).eq("status", "open");
+  const nb = $("#nb"); if (nb) { nb.textContent = count || ""; nb.style.display = count ? "inline-block" : "none"; }
+  return count || 0;
+}
+setInterval(() => { if (me) { lastBadge = 0; updateBadge(); } }, 30000);
 function go(k) { tab = k; render(); }
 const VIEWS = {};
 async function render() {
   shell("جارٍ التحميل...", "", "<div class='card empty'>⏳</div>");
-  try { const r = await VIEWS[tab](); shell(r.title, r.sub, r.html, r.actions); if (r.after) r.after(); } catch (e) { shell("خطأ", "", `<div class="card err">${esc(e.message)}</div>`); }
+  try { const r = await VIEWS[tab](); shell(r.title, r.sub, r.html, r.actions); if (r.after) r.after(); lastBadge = 0; updateBadge(); } catch (e) { shell("خطأ", "", `<div class="card err">${esc(e.message)}</div>`); }
 }
 async function base() {
   const [s, a, c, q] = await Promise.all([
-    sb.from("profiles").select("id,full_name,phone,email,center_id,centers(name)").eq("role", "student").order("full_name"),
+    sb.from("profiles").select("id,full_name,phone,email,center_id,created_at,centers(name)").eq("role", "student").order("full_name"),
     sb.from("attempts").select("*").order("created_at", { ascending: false }),
     sb.from("centers").select("id,name").order("name"),
     MAX === null ? sb.from("questions").select("marks") : Promise.resolve({ data: null }),
@@ -185,7 +203,7 @@ VIEWS.attempts = async () => {
 /* ========== الطلاب ========== */
 const STU = {};
 function studentRows(students, latest) {
-  return students.map((s) => { const a = latest.get(s.id); STU[s.id] = s.full_name; return `<tr><td>${who(s)}</td><td>${esc(s.centers?.name || "—")}</td><td>${badge(a)}</td><td>${a?.status === "submitted" ? totalOf(a) : "—"}</td>
+  return students.map((s) => { const a = latest.get(s.id); STU[s.id] = s.full_name; return `<tr><td>${who(s)}<small style="color:var(--mute)">سجّل: ${fdate(s.created_at)}</small></td><td>${esc(s.centers?.name || "—")}</td><td>${badge(a)}</td><td>${a?.status === "submitted" ? totalOf(a) : "—"}</td>
   <td><div class="row">${!a || a.status === "submitted" ? `<button class="btn sm" onclick="openAttempt('${s.id}')">${a ? "فتح محاولة جديدة" : "فتح محاولة"}</button>` : ""}
   ${a?.status === "submitted" ? `<button class="btn sm alt" onclick="reopen('${a.id}')">إعادة فتح للتكملة</button>` : ""}
   ${a && a.status !== "in_progress" ? `<button class="btn sm danger" onclick="delAttempt('${a.id}')">حذف المحاولة</button>` : ""}
@@ -193,11 +211,19 @@ function studentRows(students, latest) {
 }
 VIEWS.students = async () => {
   const { students, latest } = await base();
-  const q = filters.q.trim().toLowerCase(), rows = students.filter((s) => !q || [s.full_name, s.phone, s.email].join(" ").toLowerCase().includes(q));
-  return { title: "الطلاب", sub: `${rows.length} طالب • من هنا تفتح المحاولات`, actions: `<button class="btn" onclick="openAll()">🔓 فتح محاولة لكل من ليس له محاولة</button>`,
-    after: () => { const i = $("#sq"); i.oninput = () => { filters.q = i.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; },
-    html: `<div class="card"><div class="tools"><input id="sq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:300px"></div><div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody>${studentRows(rows, latest)}</tbody></table></div></div>` };
+  const q = filters.q.trim().toLowerCase(), ex = filters.exam || "";
+  const took = (s) => { const a = latest.get(s.id); return a && (a.status === "in_progress" || a.status === "submitted"); };
+  const rows = students.filter((s) => (!q || [s.full_name, s.phone, s.email].join(" ").toLowerCase().includes(q)) && (!ex || (ex === "no" ? !took(s) : took(s))));
+  const noExam = students.filter((s) => !took(s)).length;
+  return { title: "الطلاب", sub: `${rows.length} طالب من ${students.length} حساب مسجّل • ${noExam} لم يمتحنوا بعد`, actions: `<button class="btn" onclick="openAll()">🔓 فتح محاولة لكل من ليس له محاولة</button>`,
+    after: () => { const i = $("#sq"); i.oninput = () => { filters.q = i.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#sx").onchange = (e) => { filters.exam = e.target.value; render(); }; },
+    html: `<div class="card"><div class="tools"><input id="sq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:300px"><select id="sx" style="width:210px"><option value="">كل الحسابات المسجّلة</option><option value="no" ${ex === "no" ? "selected" : ""}>لم يمتحنوا بعد</option><option value="yes" ${ex === "yes" ? "selected" : ""}>بدأوا / سلّموا</option></select><button class="btn alt sm" onclick="exportStudents()">⬇️ تصدير كل الحسابات (Excel)</button></div><div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody>${studentRows(rows, latest)}</tbody></table></div></div>` };
 };
+async function exportStudents() {
+  const { students, latest } = await base();
+  csv([["الاسم", "الموبايل", "الإيميل", "السنتر", "تاريخ التسجيل", "الحالة"], ...students.map((s) => [s.full_name, s.phone || "", s.email && !s.email.endsWith("@student.exam.app") ? s.email : "", s.centers?.name || "", fdate(s.created_at), STATUS[statusKey(latest.get(s.id))][0]])], "حسابات-الطلاب.csv");
+}
+
 async function act(p, ok = "✓ تم") { const { error } = await p; if (error) alert(error.message); else toast(ok); render(); }
 const openAttempt = (id) => act(sb.rpc("open_attempt", { p_student: id }), "✓ تم فتح المحاولة");
 async function openAll() {
@@ -234,6 +260,51 @@ VIEWS.centers = async () => {
 };
 const addCenter = () => { const n = $("#cn").value.trim(); if (n) act(sb.from("centers").insert({ name: n })); };
 async function delCenter(id) { if (await ask("حذف السنتر", "الطلاب هيفضلوا في النظام بدون سنتر.", "", false)) act(sb.from("centers").delete().eq("id", id)); }
+
+/* ========== الدعم والمنتدى ========== */
+const CATS = { scientific: ["🎓", "الدعم العلمي"], technical: ["🛠️", "الدعم الفني"] };
+const SLAB = { open: ["بانتظار الرد", "s-open"], answered: ["تم الرد", "s-ans"], closed: ["مغلقة", "s-closed"] };
+const CANNED = ["تم استلام استفسارك وهنرد عليك في أقرب وقت.", "جرّب تعمل تحديث للصفحة وتسجّل دخول من جديد، ولو المشكلة مستمرة ابعتلي رقمك المسجّل بيه.", "بالتوفيق ليك! لو عندك أي استفسار تاني ابعتلنا.", "الإجابة موجودة في الدرس المذكور في الكتاب، راجع الجزء الخاص بالموضوع ده وهتلاقيها."];
+let SUP = { st: "open", cat: "", q: "" }, ticket = "";
+const fdt = (d) => new Date(d).toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
+VIEWS.support = async () => {
+  const { data: ts, error } = await sb.from("tickets").select("*, profiles(full_name,phone,email,centers(name))").order("last_message_at", { ascending: false });
+  if (error) throw new Error(/relation|schema cache/i.test(error.message) ? "شغّل ملف support.sql في Supabase أولًا" : error.message);
+  const cnt = { open: 0, answered: 0, closed: 0, all: ts.length }; ts.forEach((t) => cnt[t.status]++);
+  const q = SUP.q.trim().toLowerCase();
+  const list = ts.filter((t) => (SUP.st === "all" || t.status === SUP.st) && (!SUP.cat || t.category === SUP.cat) && (!q || [t.subject, t.profiles?.full_name, t.profiles?.phone].join(" ").toLowerCase().includes(q)));
+  let panel = `<div class="empty">👈 اختار محادثة من القائمة</div>`;
+  const t = ticket && ts.find((x) => x.id === ticket);
+  if (t) {
+    const { data: ms } = await sb.from("ticket_messages").select("*").eq("ticket_id", t.id).order("created_at");
+    const p = t.profiles || {};
+    panel = `<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h3 style="margin:0">${CATS[t.category][0]} ${esc(t.subject)}</h3>
+      <div class="who" style="margin-top:6px"><div class="av">${init(p.full_name)}</div><div>${esc(p.full_name)} <small>• ${esc(contact(p))} • ${esc(p.centers?.name || "بدون سنتر")}</small></div></div></div>
+      <div class="row"><span class="badge ${SLAB[t.status][1]}">${SLAB[t.status][0]}</span><span class="badge b-none">${CATS[t.category][1]}</span></div></div>
+    <div class="msgs" id="tm">${ms.map((m) => `<div class="bub ${m.sender_role === "staff" ? "team" : "stu"}">${esc(m.body)}<small>${m.sender_role === "staff" ? "فريق الدعم" : esc(p.full_name)} • ${fdt(m.created_at)}</small></div>`).join("")}</div>
+    <div class="canned">${CANNED.map((c, i) => `<button onclick="fillReply(${i})">${esc(c.slice(0, 34))}…</button>`).join("")}</div>
+    <textarea id="rp" maxlength="3000" placeholder="اكتب ردك على الطالب..." style="min-height:100px"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="sendReply('${t.id}')">📤 إرسال الرد</button>
+      ${t.status === "closed" ? `<button class="btn alt" onclick="setTStatus('${t.id}','open')">🔓 إعادة فتح</button>` : `<button class="btn alt" onclick="setTStatus('${t.id}','closed')">✅ إغلاق المحادثة</button>`}
+      ${me.role === "admin" ? `<button class="btn danger" onclick="delTicket('${t.id}')">🗑️ حذف</button>` : ""}</div>`;
+  }
+  const pill = (k, l) => `<span class="pill ${SUP.st === k ? "on" : ""}" onclick="SUP.st='${k}';render()">${l}<b>${cnt[k]}</b></span>`;
+  return { title: "الدعم والمنتدى", sub: "رسائل الطلاب لفريق الدعم العلمي والفني", actions: `<button class="btn alt" onclick="render()">🔄 تحديث</button>`,
+    after: () => { const m = $("#tm"); if (m) m.scrollTop = m.scrollHeight; $("#sqq").oninput = (e) => { SUP.q = e.target.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sqq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#scat").onchange = (e) => { SUP.cat = e.target.value; render(); }; },
+    html: `<div class="sup"><div class="card suplist"><div class="pills">${pill("open", "بانتظار الرد")}${pill("answered", "تم الرد")}${pill("closed", "مغلقة")}${pill("all", "الكل")}</div>
+      <div class="row" style="margin-bottom:10px"><input id="sqq" value="${esc(SUP.q)}" placeholder="🔍 بحث" style="flex:1;min-width:120px"><select id="scat" style="width:130px"><option value="">كل الأنواع</option><option value="scientific" ${SUP.cat === "scientific" ? "selected" : ""}>علمي</option><option value="technical" ${SUP.cat === "technical" ? "selected" : ""}>فني</option></select></div>
+      ${list.map((x) => `<div class="ti ${ticket === x.id ? "on" : ""}" onclick="openTicket('${x.id}')"><div class="ci">${CATS[x.category][0]}</div><div class="m"><b>${esc(x.subject)}</b><small>${esc(x.profiles?.full_name)} • ${fdt(x.last_message_at)}</small></div><span class="badge ${SLAB[x.status][1]}">${SLAB[x.status][0]}</span></div>`).join("") || `<div class="empty">لا توجد محادثات</div>`}</div>
+      <div class="card">${panel}</div></div>` };
+};
+const openTicket = (id) => { ticket = id; render(); };
+const fillReply = (i) => { const r = $("#rp"); r.value = (r.value ? r.value + "\n" : "") + CANNED[i]; r.focus(); };
+async function sendReply(id) {
+  const body = $("#rp").value.trim(); if (!body) return;
+  const { error } = await sb.rpc("reply_ticket", { p_ticket: id, p_body: body });
+  if (error) return alert(error.message); toast("✓ تم إرسال الرد"); render();
+}
+const setTStatus = (id, st) => act(sb.rpc("set_ticket_status", { p_ticket: id, p_status: st }), "✓ تم");
+async function delTicket(id) { if (await ask("حذف المحادثة", "هتتحذف المحادثة وكل رسائلها نهائيًا.", "", false)) { ticket = ""; act(sb.from("tickets").delete().eq("id", id)); } }
 
 /* ========== المدرسين ========== */
 VIEWS.teachers = async () => {
