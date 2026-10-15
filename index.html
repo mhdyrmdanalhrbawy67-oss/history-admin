@@ -62,6 +62,7 @@ table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:11px 10px
 <body>
 <div id="app"></div><div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 const sb = supabase.createClient("https://ejutbpumrnvuoftvwais.supabase.co", "sb_publishable_whwX3xnNzZcNbs90ejhEGA_SiA-gPgZ");
 const $ = (s) => document.querySelector(s);
@@ -177,20 +178,35 @@ VIEWS.overview = async () => {
 };
 
 /* ========== المحاولات والتصحيح ========== */
-function csv(rows, name) {
-  const b = new Blob(["\ufeff" + rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; a.click();
+async function exportPdf(title, head, rows, filename) {
+  const html = `<div style="direction:rtl;font-family:Tajawal,Tahoma,Arial,sans-serif;color:#111;padding:6px 4px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #6d1a2a;padding-bottom:8px;margin-bottom:12px"><div><div style="font-size:22px;font-weight:800;color:#6d1a2a">${esc(title)}</div><div style="color:#555;font-size:13px">امتحان التاريخ - الوحدة الثانية • تانية بكالوريا 2027</div></div><div style="color:#555;font-size:13px">${new Date().toLocaleString("ar-EG", { dateStyle: "long", timeStyle: "short" })}<br>عدد السجلات: ${rows.length}</div></div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>${head.map((h) => `<th style="background:#6d1a2a;color:#fff;padding:8px 6px;border:1px solid #6d1a2a;text-align:right">${esc(h)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map((r, i) => `<tr style="background:${i % 2 ? "#faf6ee" : "#fff"}">${r.map((c) => `<td style="padding:7px 6px;border:1px solid #ddd;text-align:right">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;top:0;left:0;width:1080px;background:#fff;z-index:-1;padding:12px";
+  box.innerHTML = html; document.body.appendChild(box);
+  try {
+    if (!window.html2pdf) throw new Error("no lib");
+    toast("جارٍ تجهيز ملف PDF...");
+    await html2pdf().set({ margin: [8, 6, 8, 6], filename, image: { type: "jpeg", quality: 0.95 }, html2canvas: { scale: 2, backgroundColor: "#ffffff" }, jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }, pagebreak: { mode: ["css", "legacy"], avoid: "tr" } }).from(box).save();
+    toast("✓ تم تنزيل ملف PDF");
+  } catch (e) {
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>${esc(title)}</title></head><body>${html}<script>setTimeout(()=>print(),400)<\/script></body></html>`); w.document.close(); toast("اختار «حفظ كـ PDF» من نافذة الطباعة"); }
+    else alert("تعذر إنشاء PDF. اسمح بالنوافذ المنبثقة وجرب تاني.");
+  } finally { box.remove(); }
 }
 async function exportCsv() {
   const { students, latest } = await base();
-  csv([["الاسم", "الموبايل", "السنتر", "الحالة", "الاختيارات", "المقالي", "تعديل", "الدرجة النهائية", "وقت التسليم"],
-    ...students.map((s) => { const a = latest.get(s.id); return [s.full_name, contact(s), s.centers?.name || "", STATUS[statusKey(a)][0], a?.mcq_score ?? "", a?.essay_score ?? "", a?.adjustment ?? "", a && a.status === "submitted" ? totalOf(a) : "", a?.submitted_at ? fdate(a.submitted_at) : ""]; })], "نتائج-الامتحان.csv");
+  exportPdf("نتائج الطلاب", ["الاسم", "الموبايل", "السنتر", "الحالة", "الاختيارات", "المقالي", "تعديل", "الدرجة النهائية", "وقت التسليم"],
+    students.map((s) => { const a = latest.get(s.id); return [s.full_name, contact(s), s.centers?.name || "—", STATUS[statusKey(a)][0], a?.mcq_score ?? "—", a?.essay_score ?? "—", a?.adjustment ?? "—", a && a.status === "submitted" ? totalOf(a) : "—", a?.submitted_at ? fdate(a.submitted_at) : "—"]; }), "نتائج-الامتحان.pdf");
 }
 VIEWS.attempts = async () => {
   const { students, centers, latest } = await base();
   const q = filters.q.trim().toLowerCase();
   const rows = students.filter((s) => (!filters.center || s.center_id === filters.center) && (!filters.status || statusKey(latest.get(s.id)) === filters.status) && (!q || [s.full_name, s.phone, s.email].join(" ").toLowerCase().includes(q)));
-  return { title: "المحاولات والتصحيح", sub: `${rows.length} طالب`, actions: `<button class="btn alt" onclick="exportCsv()">⬇️ تصدير النتائج (Excel)</button><button class="btn alt" onclick="window.print()">🖨️ طباعة</button>`,
+  return { title: "المحاولات والتصحيح", sub: `${rows.length} طالب`, actions: `<button class="btn alt" onclick="exportCsv()">⬇️ تصدير النتائج (PDF)</button><button class="btn alt" onclick="window.print()">🖨️ طباعة</button>`,
     after: () => { $("#fc").onchange = (e) => { filters.center = e.target.value; render(); }; $("#fs").onchange = (e) => { filters.status = e.target.value; render(); }; const i = $("#fq"); i.oninput = () => { filters.q = i.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#fq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; },
     html: `<div class="card"><div class="tools"><input id="fq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:260px"><select id="fc" style="width:190px"><option value="">كل السناتر</option>${centers.map((c) => `<option value="${c.id}" ${filters.center === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
     <select id="fs" style="width:190px"><option value="">كل الحالات</option>${Object.keys(STATUS).map((k) => `<option value="${k}" ${filters.status === k ? "selected" : ""}>${STATUS[k][0]}</option>`).join("")}</select>
@@ -217,11 +233,12 @@ VIEWS.students = async () => {
   const noExam = students.filter((s) => !took(s)).length;
   return { title: "الطلاب", sub: `${rows.length} طالب من ${students.length} حساب مسجّل • ${noExam} لم يمتحنوا بعد`, actions: `<button class="btn" onclick="openAll()">🔓 فتح محاولة لكل من ليس له محاولة</button>`,
     after: () => { const i = $("#sq"); i.oninput = () => { filters.q = i.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#sx").onchange = (e) => { filters.exam = e.target.value; render(); }; },
-    html: `<div class="card"><div class="tools"><input id="sq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:300px"><select id="sx" style="width:210px"><option value="">كل الحسابات المسجّلة</option><option value="no" ${ex === "no" ? "selected" : ""}>لم يمتحنوا بعد</option><option value="yes" ${ex === "yes" ? "selected" : ""}>بدأوا / سلّموا</option></select><button class="btn alt sm" onclick="exportStudents()">⬇️ تصدير كل الحسابات (Excel)</button></div><div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody>${studentRows(rows, latest)}</tbody></table></div></div>` };
+    html: `<div class="card"><div class="tools"><input id="sq" value="${esc(filters.q)}" placeholder="🔍 بحث بالاسم / الموبايل" style="width:300px"><select id="sx" style="width:210px"><option value="">كل الحسابات المسجّلة</option><option value="no" ${ex === "no" ? "selected" : ""}>لم يمتحنوا بعد</option><option value="yes" ${ex === "yes" ? "selected" : ""}>بدأوا / سلّموا</option></select><button class="btn alt sm" onclick="exportStudents()">⬇️ تصدير كل الحسابات (PDF)</button></div><div class="scroll"><table><thead><tr><th>الطالب</th><th>السنتر</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody>${studentRows(rows, latest)}</tbody></table></div></div>` };
 };
 async function exportStudents() {
   const { students, latest } = await base();
-  csv([["الاسم", "الموبايل", "الإيميل", "السنتر", "تاريخ التسجيل", "الحالة"], ...students.map((s) => [s.full_name, s.phone || "", s.email && !s.email.endsWith("@student.exam.app") ? s.email : "", s.centers?.name || "", fdate(s.created_at), STATUS[statusKey(latest.get(s.id))][0]])], "حسابات-الطلاب.csv");
+  exportPdf("حسابات الطلاب المسجّلة", ["الاسم", "الموبايل", "الإيميل", "السنتر", "تاريخ التسجيل", "الحالة"],
+    students.map((s) => [s.full_name, s.phone || "—", s.email && !s.email.endsWith("@student.exam.app") ? s.email : "—", s.centers?.name || "—", fdate(s.created_at), STATUS[statusKey(latest.get(s.id))][0]]), "حسابات-الطلاب.pdf");
 }
 
 async function act(p, ok = "✓ تم") { const { error } = await p; if (error) alert(error.message); else toast(ok); render(); }
@@ -265,14 +282,16 @@ async function delCenter(id) { if (await ask("حذف السنتر", "الطلا�
 const CATS = { scientific: ["🎓", "الدعم العلمي"], technical: ["🛠️", "الدعم الفني"] };
 const SLAB = { open: ["بانتظار الرد", "s-open"], answered: ["تم الرد", "s-ans"], closed: ["مغلقة", "s-closed"] };
 const CANNED = ["تم استلام استفسارك وهنرد عليك في أقرب وقت.", "جرّب تعمل تحديث للصفحة وتسجّل دخول من جديد، ولو المشكلة مستمرة ابعتلي رقمك المسجّل بيه.", "بالتوفيق ليك! لو عندك أي استفسار تاني ابعتلنا.", "الإجابة موجودة في الدرس المذكور في الكتاب، راجع الجزء الخاص بالموضوع ده وهتلاقيها."];
-let SUP = { st: "open", cat: "", q: "" }, ticket = "";
+const KINDS = { problem: ["⚠️", "مشكلة"], opinion: ["💭", "رأي"], suggestion: ["💡", "اقتراح"], not_graded: ["📝", "عدم تصحيح"], question: ["❓", "استفسار"], complaint: ["📣", "شكوى"] };
+const kd = (t) => KINDS[t.kind || "problem"] || KINDS.problem;
+let SUP = { st: "open", cat: "", kind: "", q: "" }, ticket = "";
 const fdt = (d) => new Date(d).toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
 VIEWS.support = async () => {
   const { data: ts, error } = await sb.from("tickets").select("*, profiles(full_name,phone,email,centers(name))").order("last_message_at", { ascending: false });
   if (error) throw new Error(/relation|schema cache/i.test(error.message) ? "شغّل ملف support.sql في Supabase أولًا" : error.message);
   const cnt = { open: 0, answered: 0, closed: 0, all: ts.length }; ts.forEach((t) => cnt[t.status]++);
   const q = SUP.q.trim().toLowerCase();
-  const list = ts.filter((t) => (SUP.st === "all" || t.status === SUP.st) && (!SUP.cat || t.category === SUP.cat) && (!q || [t.subject, t.profiles?.full_name, t.profiles?.phone].join(" ").toLowerCase().includes(q)));
+  const list = ts.filter((t) => (SUP.st === "all" || t.status === SUP.st) && (!SUP.cat || t.category === SUP.cat) && (!SUP.kind || (t.kind || "problem") === SUP.kind) && (!q || [t.subject, t.profiles?.full_name, t.profiles?.phone].join(" ").toLowerCase().includes(q)));
   let panel = `<div class="empty">👈 اختار محادثة من القائمة</div>`;
   const t = ticket && ts.find((x) => x.id === ticket);
   if (t) {
@@ -280,7 +299,7 @@ VIEWS.support = async () => {
     const p = t.profiles || {};
     panel = `<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h3 style="margin:0">${CATS[t.category][0]} ${esc(t.subject)}</h3>
       <div class="who" style="margin-top:6px"><div class="av">${init(p.full_name)}</div><div>${esc(p.full_name)} <small>• ${esc(contact(p))} • ${esc(p.centers?.name || "بدون سنتر")}</small></div></div></div>
-      <div class="row"><span class="badge ${SLAB[t.status][1]}">${SLAB[t.status][0]}</span><span class="badge b-none">${CATS[t.category][1]}</span></div></div>
+      <div class="row"><span class="badge ${SLAB[t.status][1]}">${SLAB[t.status][0]}</span><span class="badge b-none">${CATS[t.category][1]}</span><span class="badge b-new">${kd(t)[0]} ${kd(t)[1]}</span></div></div>
     <div class="msgs" id="tm">${ms.map((m) => `<div class="bub ${m.sender_role === "staff" ? "team" : "stu"}">${esc(m.body)}<small>${m.sender_role === "staff" ? "فريق الدعم" : esc(p.full_name)} • ${fdt(m.created_at)}</small></div>`).join("")}</div>
     <div class="canned">${CANNED.map((c, i) => `<button onclick="fillReply(${i})">${esc(c.slice(0, 34))}…</button>`).join("")}</div>
     <textarea id="rp" maxlength="3000" placeholder="اكتب ردك على الطالب..." style="min-height:100px"></textarea>
@@ -290,10 +309,10 @@ VIEWS.support = async () => {
   }
   const pill = (k, l) => `<span class="pill ${SUP.st === k ? "on" : ""}" onclick="SUP.st='${k}';render()">${l}<b>${cnt[k]}</b></span>`;
   return { title: "الدعم والمنتدى", sub: "رسائل الطلاب لفريق الدعم العلمي والفني", actions: `<button class="btn alt" onclick="render()">🔄 تحديث</button>`,
-    after: () => { const m = $("#tm"); if (m) m.scrollTop = m.scrollHeight; $("#sqq").oninput = (e) => { SUP.q = e.target.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sqq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#scat").onchange = (e) => { SUP.cat = e.target.value; render(); }; },
+    after: () => { const m = $("#tm"); if (m) m.scrollTop = m.scrollHeight; $("#sqq").oninput = (e) => { SUP.q = e.target.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sqq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#scat").onchange = (e) => { SUP.cat = e.target.value; render(); }; $("#skind").onchange = (e) => { SUP.kind = e.target.value; render(); }; },
     html: `<div class="sup"><div class="card suplist"><div class="pills">${pill("open", "بانتظار الرد")}${pill("answered", "تم الرد")}${pill("closed", "مغلقة")}${pill("all", "الكل")}</div>
-      <div class="row" style="margin-bottom:10px"><input id="sqq" value="${esc(SUP.q)}" placeholder="🔍 بحث" style="flex:1;min-width:120px"><select id="scat" style="width:130px"><option value="">كل الأنواع</option><option value="scientific" ${SUP.cat === "scientific" ? "selected" : ""}>علمي</option><option value="technical" ${SUP.cat === "technical" ? "selected" : ""}>فني</option></select></div>
-      ${list.map((x) => `<div class="ti ${ticket === x.id ? "on" : ""}" onclick="openTicket('${x.id}')"><div class="ci">${CATS[x.category][0]}</div><div class="m"><b>${esc(x.subject)}</b><small>${esc(x.profiles?.full_name)} • ${fdt(x.last_message_at)}</small></div><span class="badge ${SLAB[x.status][1]}">${SLAB[x.status][0]}</span></div>`).join("") || `<div class="empty">لا توجد محادثات</div>`}</div>
+      <div class="row" style="margin-bottom:10px"><input id="sqq" value="${esc(SUP.q)}" placeholder="🔍 بحث" style="flex:1;min-width:120px"><select id="scat" style="width:130px"><option value="">كل الأنواع</option><option value="scientific" ${SUP.cat === "scientific" ? "selected" : ""}>علمي</option><option value="technical" ${SUP.cat === "technical" ? "selected" : ""}>فني</option></select><select id="skind" style="width:140px"><option value="">كل الاستفسارات</option>${Object.entries(KINDS).map(([k, v]) => `<option value="${k}" ${SUP.kind === k ? "selected" : ""}>${v[0]} ${v[1]}</option>`).join("")}</select></div>
+      ${list.map((x) => `<div class="ti ${ticket === x.id ? "on" : ""}" onclick="openTicket('${x.id}')"><div class="ci">${CATS[x.category][0]}</div><div class="m"><b>${esc(x.subject)}</b><small>${kd(x)[0]} ${kd(x)[1]} • ${esc(x.profiles?.full_name)} • ${fdt(x.last_message_at)}</small></div><span class="badge ${SLAB[x.status][1]}">${SLAB[x.status][0]}</span></div>`).join("") || `<div class="empty">لا توجد محادثات</div>`}</div>
       <div class="card">${panel}</div></div>` };
 };
 const openTicket = (id) => { ticket = id; render(); };
