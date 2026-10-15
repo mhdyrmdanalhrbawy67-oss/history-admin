@@ -116,7 +116,7 @@ function loginView(msg = "") {
 }
 async function logout() { await sb.auth.signOut(); location.reload(); }
 
-const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["support", "💬", "الدعم والمنتدى"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
+const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["support", "💬", "الدعم والمنتدى"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["analysis", "📈", "تحليل الأسئلة"], ["banners", "📢", "البانرات", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
 function shell(title, sub, html, actions = "") {
   const admin = me.role === "admin";
   $("#app").innerHTML = `<div class="app"><aside class="side"><div class="brand"><b>📜</b><div><b style="background:none;width:auto;height:auto;display:block;color:#fff;font-size:17px">لوحة المالك</b><small>امتحان التاريخ • الوحدة 2</small></div></div>
@@ -341,6 +341,68 @@ async function setRole(email, role) {
   if (error) alert(error.message.includes("USER_NOT_FOUND") ? "مفيش حساب بالبيانات دي - لازم يسجّل الأول من صفحة الطالب" : error.message); else toast("✓ تم");
   render();
 }
+
+
+/* ========== البانرات (أدمن) ========== */
+const BSTYLE = { info: ["ℹ️", "معلومة", "#e6f0ff", "#1e3a8a"], success: ["✅", "نجاح", "#e3f6ea", "#14532d"], warning: ["⚠️", "تنبيه", "#fff4d6", "#7a4b00"], urgent: ["🚨", "عاجل", "#fde8e8", "#991b1b"] };
+let bannerEdit = null, BN = {};
+const dtl = (d) => (d ? new Date(new Date(d).getTime() - new Date(d).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "");
+VIEWS.banners = async () => {
+  const { data, error } = await sb.from("banners").select("*").order("sort").order("created_at", { ascending: false });
+  if (error) throw new Error("شغّل ملف banners.sql في Supabase أولًا (" + error.message + ")");
+  BN = Object.fromEntries(data.map((b) => [b.id, b]));
+  const now = Date.now(), eb = bannerEdit ? BN[bannerEdit] : null;
+  const state = (b) => (!b.active ? ["متوقف", "b-none"] : b.starts_at && new Date(b.starts_at) > now ? ["مجدول", "b-new"] : b.ends_at && new Date(b.ends_at) < now ? ["منتهي", "b-none"] : ["ظاهر للطلاب", "b-done"]);
+  const prev = (b) => { const st = BSTYLE[b.style] || BSTYLE.info; return `<div style="background:${st[2]};color:${st[3]};padding:10px 16px;border-radius:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div style="flex:1"><b>${st[0]} ${esc(b.title)}</b>${b.body ? " — " + esc(b.body) : ""}</div>${b.link_url ? `<span style="background:rgba(0,0,0,.12);border-radius:8px;padding:2px 12px;font-weight:700">${esc(b.link_text || "افتح")}</span>` : ""}</div>`; };
+  return { title: "البانرات", sub: "إعلانات تظهر للطلاب فوق الصفحة (قبل الامتحان)", actions: "",
+    html: `<div class="card"><h3>${eb ? "✏️ تعديل بانر" : "➕ بانر جديد"}</h3>
+    <div class="row"><div style="flex:2;min-width:240px"><label class="l" style="margin-top:0">العنوان *</label><input id="bt" maxlength="120" value="${esc(eb?.title)}" placeholder="مثال: الامتحان يبدأ الأحد 9 صباحًا"></div>
+    <div style="width:170px"><label class="l" style="margin-top:0">النوع</label><select id="bs">${Object.entries(BSTYLE).map(([k, v]) => `<option value="${k}" ${(eb?.style || "info") === k ? "selected" : ""}>${v[0]} ${v[1]}</option>`).join("")}</select></div></div>
+    <label class="l">تفاصيل (اختياري)</label><input id="bb" maxlength="300" value="${esc(eb?.body)}" placeholder="جملة قصيرة تحت العنوان">
+    <div class="row"><div style="flex:2;min-width:220px"><label class="l">رابط (اختياري)</label><input id="bl" dir="ltr" value="${esc(eb?.link_url)}" placeholder="https://..."></div><div style="flex:1;min-width:150px"><label class="l">نص الزر</label><input id="blt" value="${esc(eb?.link_text)}" placeholder="التفاصيل"></div></div>
+    <div class="row"><div style="flex:1;min-width:190px"><label class="l">يبدأ في (اختياري)</label><input id="bst" type="datetime-local" value="${dtl(eb?.starts_at)}"></div><div style="flex:1;min-width:190px"><label class="l">ينتهي في (اختياري)</label><input id="ben" type="datetime-local" value="${dtl(eb?.ends_at)}"></div><div style="width:110px"><label class="l">الترتيب</label><input id="bo" type="number" value="${eb?.sort ?? 0}"></div></div>
+    <div class="row" style="margin-top:14px"><button class="btn" onclick="saveBanner()">${eb ? "💾 حفظ التعديل" : "📢 نشر البانر"}</button>${eb ? `<button class="btn alt" onclick="bannerEdit=null;render()">إلغاء التعديل</button>` : ""}</div></div>
+    <div class="card"><h3>البانرات (${data.length})</h3>${data.map((b) => { const st = state(b); return `<div style="margin-bottom:14px">${prev(b)}<div class="row" style="margin-top:8px"><span class="badge ${st[1]}">${st[0]}</span><small style="color:var(--mute)">${b.starts_at ? "من " + fdate(b.starts_at) : ""} ${b.ends_at ? "• حتى " + fdate(b.ends_at) : ""}</small><span style="margin-right:auto"></span><button class="btn sm alt" onclick="toggleBanner('${b.id}')">${b.active ? "⏸ إيقاف" : "▶ تفعيل"}</button><button class="btn sm ghost" onclick="bannerEdit='${b.id}';render();window.scrollTo(0,0)">✏️ تعديل</button><button class="btn sm danger" onclick="delBanner('${b.id}')">🗑️ حذف</button></div></div>`; }).join("") || `<div class="empty">لا توجد بانرات - أضف أول بانر من فوق</div>`}</div>` };
+};
+async function saveBanner() {
+  const title = $("#bt").value.trim(); if (!title) return alert("اكتب عنوان البانر");
+  const url = $("#bl").value.trim(); if (url && !/^https?:\/\//i.test(url)) return alert("الرابط لازم يبدأ بـ https://");
+  const iso = (v) => (v ? new Date(v).toISOString() : null);
+  const row = { title, body: $("#bb").value.trim() || null, style: $("#bs").value, link_url: url || null, link_text: $("#blt").value.trim() || null, starts_at: iso($("#bst").value), ends_at: iso($("#ben").value), sort: Number($("#bo").value || 0) };
+  const q = bannerEdit ? sb.from("banners").update(row).eq("id", bannerEdit) : sb.from("banners").insert({ ...row, active: true });
+  bannerEdit = null; act(q, "✓ تم حفظ البانر");
+}
+const toggleBanner = (id) => act(sb.from("banners").update({ active: !BN[id].active }).eq("id", id), "✓ تم");
+async function delBanner(id) { if (await ask("حذف البانر", "هيتشال من عند كل الطلاب.", "", false)) act(sb.from("banners").delete().eq("id", id)); }
+
+/* ========== تحليل الأسئلة ========== */
+VIEWS.analysis = async () => {
+  const [{ data: qs, error: e1 }, { data: key }, { data: atts }] = await Promise.all([
+    sb.from("questions").select("id,position,kind,lesson,text,marks").order("position"),
+    sb.from("answer_key").select("question_id,correct_option"),
+    sb.from("attempts").select("id").eq("status", "submitted")]);
+  if (e1) throw e1;
+  const ok = new Set((atts || []).map((a) => a.id)), K = Object.fromEntries((key || []).map((k) => [k.question_id, k.correct_option]));
+  let rows = [], from = 0;
+  for (;;) {
+    const { data, error } = await sb.from("answers").select("attempt_id,question_id,choice,essay_score").order("attempt_id").order("question_id").range(from, from + 999);
+    if (error) throw error; rows = rows.concat(data);
+    if (data.length < 1000 || rows.length > 80000) break; from += 1000;
+  }
+  const st = {}; qs.forEach((q) => (st[q.id] = { n: 0, c: 0, w: [0, 0, 0, 0], sum: 0 }));
+  rows.forEach((r) => { if (!ok.has(r.attempt_id) || !st[r.question_id]) return; const q = st[r.question_id], isE = qs.find((x) => x.id === r.question_id)?.kind === "essay";
+    if (isE) { if (r.essay_score !== null) { q.n++; q.sum += Number(r.essay_score); } } else if (r.choice !== null && r.choice !== undefined) { q.n++; if (r.choice === K[r.question_id]) q.c++; else if (r.choice >= 0 && r.choice < 4) q.w[r.choice]++; } });
+  const list = qs.map((q) => { const x = st[q.id], isE = q.kind === "essay"; const pct = x.n ? Math.round((isE ? x.sum / (x.n * Number(q.marks)) : x.c / x.n) * 100) : null; const wi = x.w.indexOf(Math.max(...x.w)); return { q, x, isE, pct, wrong: !isE && x.w[wi] ? LET[wi] + " (" + x.w[wi] + ")" : "—" }; });
+  const ranked = list.filter((r) => r.pct !== null).sort((a, b) => a.pct - b.pct);
+  const lessonStat = {}; list.filter((r) => !r.isE && r.x.n).forEach((r) => { const L = lessonStat[r.q.lesson] || (lessonStat[r.q.lesson] = { c: 0, n: 0 }); L.c += r.x.c; L.n += r.x.n; });
+  const LN = { 1: "الدرس 1: سياسات الاحتلال", 2: "الدرس 2: صمود الشعب ومقاومة الاحتلال", 3: "الدرس 3: ثورة 23 يوليو 1952", 4: "الدرس 4: الهوية الوطنية والاستعمار الجديد" };
+  const col = (p) => (p >= 70 ? "#15803d" : p >= 50 ? "#c8a24a" : "#b91c1c");
+  window._analysisRows = ranked.map((r) => [r.q.position, r.q.text.slice(0, 90), r.q.kind === "essay" ? "مقالي" : "اختياري", LN[r.q.lesson] || "—", r.x.n, r.pct + "%", r.wrong]);
+  return { title: "تحليل الأسئلة", sub: `مبني على ${ok.size} محاولة مسلّمة • الأصعب أولًا`, actions: `<button class="btn alt" onclick="exportPdf('تحليل أسئلة الامتحان',['#','السؤال','النوع','الدرس','عدد الإجابات','نسبة النجاح','أكثر خطأ'],window._analysisRows,'تحليل-الأسئلة.pdf')">⬇️ تصدير (PDF)</button>`,
+    html: ranked.length ? `<div class="cols"><div class="card"><h3>أسهل / أصعب</h3><div>🟢 الأسهل: <b>سؤال ${ranked[ranked.length - 1].q.position}</b> (${ranked[ranked.length - 1].pct}%)</div><div>🔴 الأصعب: <b>سؤال ${ranked[0].q.position}</b> (${ranked[0].pct}%)</div><div style="margin-top:8px">📊 متوسط النجاح: <b>${Math.round(ranked.reduce((a, r) => a + r.pct, 0) / ranked.length)}%</b></div></div>
+    <div class="card"><h3>مستوى الطلاب في كل درس (الاختياري)</h3><div class="bars">${Object.keys(lessonStat).sort().map((k) => { const p = Math.round((lessonStat[k].c / lessonStat[k].n) * 100); return `<div class="r" style="grid-template-columns:230px 1fr 48px"><span>${LN[k] || "درس " + k}</span><div class="t"><i style="width:${p}%;background:${col(p)}"></i></div><b>${p}%</b></div>`; }).join("")}</div></div></div>
+    <div class="card"><div class="scroll"><table><thead><tr><th>#</th><th>السؤال</th><th>النوع</th><th>إجابات</th><th>نسبة النجاح</th><th>أكثر إجابة خاطئة</th></tr></thead><tbody>${ranked.map((r) => `<tr><td>${r.q.position}</td><td>${esc(r.q.text.slice(0, 110))}${r.q.text.length > 110 ? "…" : ""}</td><td>${r.isE ? "مقالي" : "اختياري"}</td><td>${r.x.n}</td><td style="min-width:140px"><div class="bars"><div class="r" style="grid-template-columns:1fr 42px;margin:0"><div class="t"><i style="width:${r.pct}%;background:${col(r.pct)}"></i></div><b>${r.pct}%</b></div></div></td><td>${r.wrong}</td></tr>`).join("")}</tbody></table></div></div>` : `<div class="card empty">لسه مفيش محاولات مسلّمة لتحليلها</div>` };
+};
 
 /* ========== الإعدادات ========== */
 VIEWS.settings = async () => {
