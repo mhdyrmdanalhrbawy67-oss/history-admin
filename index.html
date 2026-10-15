@@ -284,10 +284,11 @@ const SLAB = { open: ["بانتظار الرد", "s-open"], answered: ["تم ا�
 const CANNED = ["تم استلام استفسارك وهنرد عليك في أقرب وقت.", "جرّب تعمل تحديث للصفحة وتسجّل دخول من جديد، ولو المشكلة مستمرة ابعتلي رقمك المسجّل بيه.", "بالتوفيق ليك! لو عندك أي استفسار تاني ابعتلنا.", "الإجابة موجودة في الدرس المذكور في الكتاب، راجع الجزء الخاص بالموضوع ده وهتلاقيها."];
 const KINDS = { problem: ["⚠️", "مشكلة"], opinion: ["💭", "رأي"], suggestion: ["💡", "اقتراح"], not_graded: ["📝", "عدم تصحيح"], question: ["❓", "استفسار"], complaint: ["📣", "شكوى"] };
 const kd = (t) => KINDS[t.kind || "problem"] || KINDS.problem;
-let SUP = { st: "open", cat: "", kind: "", q: "" }, ticket = "";
+let SUP = { st: "all", cat: "", kind: "", q: "" }, ticket = "";
 const fdt = (d) => new Date(d).toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
 VIEWS.support = async () => {
-  const { data: ts, error } = await sb.from("tickets").select("*, profiles(full_name,phone,email,centers(name))").order("last_message_at", { ascending: false });
+  let { data: ts, error } = await sb.from("tickets").select("*, profiles(full_name,phone,email,centers(name))").order("last_message_at", { ascending: false });
+  if (error) { const r2 = await sb.from("tickets").select("*").order("last_message_at", { ascending: false }); if (!r2.error) { ts = r2.data; error = null; toast("تنبيه: بيانات الطلاب لا تظهر مع المحادثات - شغّل fix-all.sql"); } }
   if (error) throw new Error(/relation|schema cache/i.test(error.message) ? "شغّل ملف support.sql في Supabase أولًا" : error.message);
   const cnt = { open: 0, answered: 0, closed: 0, all: ts.length }; ts.forEach((t) => cnt[t.status]++);
   const q = SUP.q.trim().toLowerCase();
@@ -309,7 +310,7 @@ VIEWS.support = async () => {
   }
   const pill = (k, l) => `<span class="pill ${SUP.st === k ? "on" : ""}" onclick="SUP.st='${k}';render()">${l}<b>${cnt[k]}</b></span>`;
   return { title: "الدعم والمنتدى", sub: "رسائل الطلاب لفريق الدعم العلمي والفني", actions: `<button class="btn alt" onclick="render()">🔄 تحديث</button>`,
-    after: () => { const m = $("#tm"); if (m) m.scrollTop = m.scrollHeight; $("#sqq").oninput = (e) => { SUP.q = e.target.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sqq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#scat").onchange = (e) => { SUP.cat = e.target.value; render(); }; $("#skind").onchange = (e) => { SUP.kind = e.target.value; render(); }; },
+    after: () => { clearInterval(VIEWS.p); VIEWS.p = setInterval(() => { if (tab === "support" && !($("#rp") && $("#rp").value)) render(); }, 30000); const m = $("#tm"); if (m) m.scrollTop = m.scrollHeight; $("#sqq").oninput = (e) => { SUP.q = e.target.value; clearTimeout(VIEWS.t); VIEWS.t = setTimeout(async () => { await render(); const n = $("#sqq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 450); }; $("#scat").onchange = (e) => { SUP.cat = e.target.value; render(); }; $("#skind").onchange = (e) => { SUP.kind = e.target.value; render(); }; },
     html: `<div class="sup"><div class="card suplist"><div class="pills">${pill("open", "بانتظار الرد")}${pill("answered", "تم الرد")}${pill("closed", "مغلقة")}${pill("all", "الكل")}</div>
       <div class="row" style="margin-bottom:10px"><input id="sqq" value="${esc(SUP.q)}" placeholder="🔍 بحث" style="flex:1;min-width:120px"><select id="scat" style="width:130px"><option value="">كل الأنواع</option><option value="scientific" ${SUP.cat === "scientific" ? "selected" : ""}>علمي</option><option value="technical" ${SUP.cat === "technical" ? "selected" : ""}>فني</option></select><select id="skind" style="width:140px"><option value="">كل الاستفسارات</option>${Object.entries(KINDS).map(([k, v]) => `<option value="${k}" ${SUP.kind === k ? "selected" : ""}>${v[0]} ${v[1]}</option>`).join("")}</select></div>
       ${list.map((x) => `<div class="ti ${ticket === x.id ? "on" : ""}" onclick="openTicket('${x.id}')"><div class="ci">${CATS[x.category][0]}</div><div class="m"><b>${esc(x.subject)}</b><small>${kd(x)[0]} ${kd(x)[1]} • ${esc(x.profiles?.full_name)} • ${fdt(x.last_message_at)}</small></div><span class="badge ${SLAB[x.status][1]}">${SLAB[x.status][0]}</span></div>`).join("") || `<div class="empty">لا توجد محادثات</div>`}</div>
