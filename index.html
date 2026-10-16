@@ -241,7 +241,9 @@ async function exportStudents() {
     students.map((s) => [s.full_name, s.phone || "—", s.email && !s.email.endsWith("@student.exam.app") ? s.email : "—", s.centers?.name || "—", fdate(s.created_at), STATUS[statusKey(latest.get(s.id))][0]]), "حسابات-الطلاب.pdf");
 }
 
-async function act(p, ok = "✓ تم") { const { error } = await p; if (error) alert(error.message); else toast(ok); render(); }
+const friendlyErr = (m) => /permission denied/i.test(m) ? "ممنوع بسبب صلاحيات الجدول (permission denied).\nشغّل ملف fix-permissions.sql في Supabase SQL Editor.\n\n" + m : /row-level security/i.test(m) ? "حسابك مش أدمن أو صلاحية الجدول ناقصة.\nتأكد إن حسابك role = admin، وشغّل ملف fix-permissions.sql.\n\n" + m : /does not exist|schema cache|Could not find/i.test(m) ? "الجدول غير موجود.\nشغّل ملفات banners.sql و notifications.sql في Supabase.\n\n" + m : m;
+function errModal(msg) { const m = document.createElement("div"); m.className = "modal"; m.innerHTML = `<div><h3 style="color:#b91c1c">⚠️ تعذّر تنفيذ العملية</h3><div style="white-space:pre-wrap;word-break:break-word;line-height:1.8">${esc(friendlyErr(String(msg)))}</div><div class="r"><button class="btn">حسنًا</button></div></div>`; m.onclick = (e) => { if (e.target === m || e.target.closest("button")) m.remove(); }; document.body.appendChild(m); }
+async function act(p, ok = "✓ تم") { let r; try { r = await p; } catch (e) { r = { error: e }; } if (r && r.error) { errModal(r.error.message || r.error); return; } toast(ok); render(); }
 const openAttempt = (id) => act(sb.rpc("open_attempt", { p_student: id }), "✓ تم فتح المحاولة");
 async function openAll() {
   if (!(await ask("فتح محاولات", "هيتم فتح محاولة لكل طالب ليس له محاولة حالية. متأكد؟", "", false))) return;
@@ -388,7 +390,7 @@ VIEWS.notifs = async () => {
     <div style="width:170px"><label class="l" style="margin-top:0">النوع</label><select id="nk">${Object.entries(BSTYLE).map(([k, v]) => `<option value="${k}">${v[0]} ${v[1]}</option>`).join("")}</select></div></div>
     <label class="l">التفاصيل (اختياري)</label><input id="nb" maxlength="300" placeholder="جملة توضيحية قصيرة">
     <div class="row"><div style="flex:2;min-width:220px"><label class="l">رابط (اختياري)</label><input id="nl" dir="ltr" placeholder="https://..."></div><div style="flex:1;min-width:150px"><label class="l">نص الرابط</label><input id="nlt" placeholder="فتح"></div><div style="flex:1;min-width:190px"><label class="l">ينتهي في (اختياري)</label><input id="ne" type="datetime-local"></div></div>
-    <div class="row" style="margin-top:14px"><button class="btn" onclick="saveNotif()">🔔 إرسال للطلاب</button></div></div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="nsend" onclick="saveNotif()">🔔 إرسال للطلاب</button></div></div>
     <div class="card"><h3>الإشعارات المرسلة (${data.length})</h3><div class="scroll"><table><thead><tr><th>الإشعار</th><th>النوع</th><th>الحالة</th><th>وقت الإرسال</th><th></th></tr></thead><tbody>
     ${data.map((n) => `<tr><td><b>${esc(n.title)}</b>${n.body ? `<br><small style="color:var(--mute)">${esc(n.body)}</small>` : ""}</td><td>${(BSTYLE[n.kind] || BSTYLE.info)[0]} ${(BSTYLE[n.kind] || BSTYLE.info)[1]}</td><td><span class="badge ${live(n) ? "b-done" : "b-none"}">${!n.active ? "متوقف" : live(n) ? "ظاهر للطلاب" : "منتهي"}</span></td><td>${fdate(n.created_at)}</td><td><div class="row"><button class="btn sm alt" onclick="toggleNotif('${n.id}',${!n.active})">${n.active ? "⏸ إيقاف" : "▶ تفعيل"}</button><button class="btn sm danger" onclick="delNotif('${n.id}')">🗑️ حذف</button></div></td></tr>`).join("") || `<tr><td colspan="5" class="empty">لا توجد إشعارات - أرسل أول إشعار من فوق</td></tr>`}</tbody></table></div></div>` };
 };
@@ -396,6 +398,7 @@ async function saveNotif() {
   const title = $("#nt").value.trim(); if (!title) return alert("اكتب عنوان الإشعار");
   const url = $("#nl").value.trim(); if (url && !/^https?:\/\//i.test(url)) return alert("الرابط لازم يبدأ بـ https://");
   const ex = $("#ne").value;
+  { const b = $("#nsend"); if (b) { b.disabled = true; b.textContent = "جارٍ الإرسال..."; } }
   act(sb.from("notifications").insert({ title, body: $("#nb").value.trim() || null, kind: $("#nk").value, link_url: url || null, link_text: $("#nlt").value.trim() || null, expires_at: ex ? new Date(ex).toISOString() : null, active: true }), "✓ تم إرسال الإشعار للطلاب");
 }
 const toggleNotif = (id, v) => act(sb.from("notifications").update({ active: v }).eq("id", id), "✓ تم");
