@@ -178,6 +178,17 @@ VIEWS.overview = async () => {
     <div class="card"><h3>آخر التسليمات</h3>${recent.map((a) => `<div class="who" style="justify-content:space-between;margin:10px 0"><div class="who"><div class="av">${init(sm[a.student_id]?.full_name)}</div><div>${esc(sm[a.student_id]?.full_name)}<br><small>${fdate(a.submitted_at)}</small></div></div><button class="btn sm" onclick="grade('${a.id}')">${a.graded ? "عرض" : "تصحيح"}</button></div>`).join("") || `<div class="empty">لسه مفيش تسليمات</div>`}</div></div>` };
 };
 
+
+const _ov = VIEWS.overview;
+VIEWS.overview = async () => {
+  const r = await _ov(); let hb = "";
+  try {
+    const { data: d, error } = await sb.rpc("get_honor_board");
+    if (!error && d) hb = `<div class="card"><h3>🏆 لوحة الشرف <small style="color:var(--mute);font-weight:400">— بتتحدث تلقائيًا بعد اعتماد كل درجة</small></h3>${(d.rows || []).length ? `<div class="scroll"><table><thead><tr><th>الترتيب</th><th>الطالب</th><th>السنتر</th><th>الدرجة</th></tr></thead><tbody>${d.rows.map((x) => `<tr><td><b>${["🥇", "🥈", "🥉"][x.pos - 1] || x.pos}</b></td><td>${esc(x.name)}</td><td>${esc(x.center || "—")}</td><td><b>${Number(x.total)}</b>${d.max ? " / " + d.max : ""}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">لسه مفيش درجات معتمدة</div>`}</div>`;
+  } catch (e) {}
+  r.html += hb; return r;
+};
+
 /* ========== المحاولات والتصحيح ========== */
 async function exportPdf(title, head, rows, filename) {
   const html = `<div style="direction:rtl;font-family:Tajawal,Tahoma,Arial,sans-serif;color:#111;padding:6px 4px">
@@ -460,9 +471,11 @@ VIEWS.settings = async () => {
     html: `<div class="card" style="max-width:640px"><label class="l" style="margin-top:0">عنوان الامتحان</label><input id="st" value="${esc(s.title)}"><label class="l">المدة (بالدقائق)</label><input id="sd" type="number" value="${s.duration_minutes}">
     <label class="l" style="display:flex;gap:10px;align-items:center;cursor:pointer"><input id="so" type="checkbox" style="width:20px;height:20px" ${s.is_open ? "checked" : ""}> الامتحان مفتوح لكل الطلاب</label>
     <label class="l" style="display:flex;gap:10px;align-items:center;cursor:pointer"><input id="ss" type="checkbox" style="width:20px;height:20px" ${s.allow_self_start ? "checked" : ""}> السماح للطالب يبدأ بنفسه (لو الامتحان مفتوح)</label>
+    <label class="l" style="display:flex;gap:10px;align-items:center;cursor:pointer"><input id="sh" type="checkbox" style="width:20px;height:20px" ${s.honor_enabled !== false ? "checked" : ""}> 🏆 إظهار لوحة الشرف للطلاب</label>
+    <div class="row"><div style="width:190px"><label class="l">عدد الأوائل في اللوحة</label><input id="shl" type="number" min="3" max="100" value="${s.honor_limit ?? 10}"></div><label class="l" style="display:flex;gap:10px;align-items:center;cursor:pointer;margin-top:30px"><input id="shs" type="checkbox" style="width:20px;height:20px" ${s.honor_short_names ? "checked" : ""}> عرض الاسم الأول والثاني فقط</label></div>
     <p style="color:var(--mute)">لو الامتحان مقفول: الطالب مش هيقدر يبدأ إلا لو فتحتله محاولة من صفحة "الطلاب". تغيير المدة بيسري على المحاولات الجديدة فقط.</p><button class="btn" onclick="saveSettings()">💾 حفظ</button></div>` };
 };
-const saveSettings = () => act(sb.from("exam_settings").update({ title: $("#st").value, duration_minutes: Number($("#sd").value), is_open: $("#so").checked, allow_self_start: $("#ss").checked }).eq("id", 1), "✓ تم الحفظ");
+const saveSettings = () => act(sb.from("exam_settings").update({ title: $("#st").value, duration_minutes: Number($("#sd").value), is_open: $("#so").checked, allow_self_start: $("#ss").checked, honor_enabled: $("#sh").checked, honor_limit: Math.max(3, Number($("#shl").value) || 10), honor_short_names: $("#shs").checked }).eq("id", 1), "✓ تم الحفظ");
 
 /* ========== التصحيح وتعديل الدرجات ========== */
 async function grade(id) {
