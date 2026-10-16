@@ -116,7 +116,7 @@ function loginView(msg = "") {
 }
 async function logout() { await sb.auth.signOut(); location.reload(); }
 
-const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["support", "💬", "الدعم والمنتدى"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["analysis", "📈", "تحليل الأسئلة"], ["banners", "📢", "البانرات", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
+const TABS = [["overview", "📊", "نظرة عامة"], ["attempts", "📝", "المحاولات والتصحيح"], ["students", "👥", "الطلاب"], ["support", "💬", "الدعم والمنتدى"], ["centers", "🏫", "السناتر"], ["teachers", "🧑‍🏫", "المدرسين", true], ["analysis", "📈", "تحليل الأسئلة"], ["banners", "📢", "البانرات", true], ["notifs", "🔔", "الإشعارات", true], ["settings", "⚙️", "إعدادات الامتحان", true]];
 function shell(title, sub, html, actions = "") {
   const admin = me.role === "admin";
   $("#app").innerHTML = `<div class="app"><aside class="side"><div class="brand"><b>📜</b><div><b style="background:none;width:auto;height:auto;display:block;color:#fff;font-size:17px">لوحة المالك</b><small>امتحان التاريخ • الوحدة 2</small></div></div>
@@ -353,11 +353,12 @@ VIEWS.banners = async () => {
   BN = Object.fromEntries(data.map((b) => [b.id, b]));
   const now = Date.now(), eb = bannerEdit ? BN[bannerEdit] : null;
   const state = (b) => (!b.active ? ["متوقف", "b-none"] : b.starts_at && new Date(b.starts_at) > now ? ["مجدول", "b-new"] : b.ends_at && new Date(b.ends_at) < now ? ["منتهي", "b-none"] : ["ظاهر للطلاب", "b-done"]);
-  const prev = (b) => { const st = BSTYLE[b.style] || BSTYLE.info; return `<div style="background:${st[2]};color:${st[3]};padding:10px 16px;border-radius:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div style="flex:1"><b>${st[0]} ${esc(b.title)}</b>${b.body ? " — " + esc(b.body) : ""}</div>${b.link_url ? `<span style="background:rgba(0,0,0,.12);border-radius:8px;padding:2px 12px;font-weight:700">${esc(b.link_text || "افتح")}</span>` : ""}</div>`; };
+  const GR = { info: "linear-gradient(135deg,#1e3a8a,#2563eb 60%,#60a5fa)", success: "linear-gradient(135deg,#065f46,#10b981 70%,#6ee7b7)", warning: "linear-gradient(135deg,#92400e,#f59e0b 70%,#fcd34d)", urgent: "linear-gradient(135deg,#7f1d1d,#dc2626 65%,#f87171)" };
+  const prev = (b) => { const st = BSTYLE[b.style] || BSTYLE.info; return `<div style="background:${GR[b.style] || GR.info};color:#fff;padding:18px 22px;border-radius:18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;box-shadow:0 8px 20px rgba(0,0,0,.15)"><div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:30px">${esc(b.icon || st[0])}</div><div style="flex:1;min-width:180px"><span style="background:rgba(255,255,255,.22);border-radius:99px;padding:0 12px;font-size:12px;font-weight:800">${st[1]}</span><div style="font-size:20px;font-weight:800;line-height:1.5">${esc(b.title)}</div>${b.body ? `<div style="opacity:.95">${esc(b.body)}</div>` : ""}</div>${b.link_url ? `<span style="background:#fff;color:#1c2233;border-radius:10px;padding:6px 16px;font-weight:800">${esc(b.link_text || "اعرف أكتر")} ←</span>` : ""}</div>`; };
   return { title: "البانرات", sub: "إعلانات تظهر للطلاب فوق الصفحة (قبل الامتحان)", actions: "",
     html: `<div class="card"><h3>${eb ? "✏️ تعديل بانر" : "➕ بانر جديد"}</h3>
     <div class="row"><div style="flex:2;min-width:240px"><label class="l" style="margin-top:0">العنوان *</label><input id="bt" maxlength="120" value="${esc(eb?.title)}" placeholder="مثال: الامتحان يبدأ الأحد 9 صباحًا"></div>
-    <div style="width:170px"><label class="l" style="margin-top:0">النوع</label><select id="bs">${Object.entries(BSTYLE).map(([k, v]) => `<option value="${k}" ${(eb?.style || "info") === k ? "selected" : ""}>${v[0]} ${v[1]}</option>`).join("")}</select></div></div>
+    <div style="width:170px"><label class="l" style="margin-top:0">النوع</label><select id="bs">${Object.entries(BSTYLE).map(([k, v]) => `<option value="${k}" ${(eb?.style || "info") === k ? "selected" : ""}>${v[0]} ${v[1]}</option>`).join("")}</select></div><div style="width:110px"><label class="l" style="margin-top:0">أيقونة</label><input id="bi" maxlength="4" value="${esc(eb?.icon)}" placeholder="🎉"></div></div>
     <label class="l">تفاصيل (اختياري)</label><input id="bb" maxlength="300" value="${esc(eb?.body)}" placeholder="جملة قصيرة تحت العنوان">
     <div class="row"><div style="flex:2;min-width:220px"><label class="l">رابط (اختياري)</label><input id="bl" dir="ltr" value="${esc(eb?.link_url)}" placeholder="https://..."></div><div style="flex:1;min-width:150px"><label class="l">نص الزر</label><input id="blt" value="${esc(eb?.link_text)}" placeholder="التفاصيل"></div></div>
     <div class="row"><div style="flex:1;min-width:190px"><label class="l">يبدأ في (اختياري)</label><input id="bst" type="datetime-local" value="${dtl(eb?.starts_at)}"></div><div style="flex:1;min-width:190px"><label class="l">ينتهي في (اختياري)</label><input id="ben" type="datetime-local" value="${dtl(eb?.ends_at)}"></div><div style="width:110px"><label class="l">الترتيب</label><input id="bo" type="number" value="${eb?.sort ?? 0}"></div></div>
@@ -368,12 +369,37 @@ async function saveBanner() {
   const title = $("#bt").value.trim(); if (!title) return alert("اكتب عنوان البانر");
   const url = $("#bl").value.trim(); if (url && !/^https?:\/\//i.test(url)) return alert("الرابط لازم يبدأ بـ https://");
   const iso = (v) => (v ? new Date(v).toISOString() : null);
-  const row = { title, body: $("#bb").value.trim() || null, style: $("#bs").value, link_url: url || null, link_text: $("#blt").value.trim() || null, starts_at: iso($("#bst").value), ends_at: iso($("#ben").value), sort: Number($("#bo").value || 0) };
+  const row = { title, icon: $("#bi").value.trim() || null, body: $("#bb").value.trim() || null, style: $("#bs").value, link_url: url || null, link_text: $("#blt").value.trim() || null, starts_at: iso($("#bst").value), ends_at: iso($("#ben").value), sort: Number($("#bo").value || 0) };
   const q = bannerEdit ? sb.from("banners").update(row).eq("id", bannerEdit) : sb.from("banners").insert({ ...row, active: true });
   bannerEdit = null; act(q, "✓ تم حفظ البانر");
 }
 const toggleBanner = (id) => act(sb.from("banners").update({ active: !BN[id].active }).eq("id", id), "✓ تم");
 async function delBanner(id) { if (await ask("حذف البانر", "هيتشال من عند كل الطلاب.", "", false)) act(sb.from("banners").delete().eq("id", id)); }
+
+
+/* ========== الإشعارات 🔔 (أدمن) ========== */
+VIEWS.notifs = async () => {
+  const { data, error } = await sb.from("notifications").select("*").order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error("شغّل ملف notifications.sql في Supabase أولًا (" + error.message + ")");
+  const now = Date.now(), live = (n) => n.active && !(n.expires_at && new Date(n.expires_at) < now);
+  return { title: "الإشعارات", sub: "تظهر للطلاب على أيقونة 🔔 مع عدّاد للغير مقروء", actions: "",
+    html: `<div class="card"><h3>➕ إشعار جديد</h3>
+    <div class="row"><div style="flex:2;min-width:240px"><label class="l" style="margin-top:0">العنوان *</label><input id="nt" maxlength="120" placeholder="مثال: تم فتح الامتحان الآن"></div>
+    <div style="width:170px"><label class="l" style="margin-top:0">النوع</label><select id="nk">${Object.entries(BSTYLE).map(([k, v]) => `<option value="${k}">${v[0]} ${v[1]}</option>`).join("")}</select></div></div>
+    <label class="l">التفاصيل (اختياري)</label><input id="nb" maxlength="300" placeholder="جملة توضيحية قصيرة">
+    <div class="row"><div style="flex:2;min-width:220px"><label class="l">رابط (اختياري)</label><input id="nl" dir="ltr" placeholder="https://..."></div><div style="flex:1;min-width:150px"><label class="l">نص الرابط</label><input id="nlt" placeholder="فتح"></div><div style="flex:1;min-width:190px"><label class="l">ينتهي في (اختياري)</label><input id="ne" type="datetime-local"></div></div>
+    <div class="row" style="margin-top:14px"><button class="btn" onclick="saveNotif()">🔔 إرسال للطلاب</button></div></div>
+    <div class="card"><h3>الإشعارات المرسلة (${data.length})</h3><div class="scroll"><table><thead><tr><th>الإشعار</th><th>النوع</th><th>الحالة</th><th>وقت الإرسال</th><th></th></tr></thead><tbody>
+    ${data.map((n) => `<tr><td><b>${esc(n.title)}</b>${n.body ? `<br><small style="color:var(--mute)">${esc(n.body)}</small>` : ""}</td><td>${(BSTYLE[n.kind] || BSTYLE.info)[0]} ${(BSTYLE[n.kind] || BSTYLE.info)[1]}</td><td><span class="badge ${live(n) ? "b-done" : "b-none"}">${!n.active ? "متوقف" : live(n) ? "ظاهر للطلاب" : "منتهي"}</span></td><td>${fdate(n.created_at)}</td><td><div class="row"><button class="btn sm alt" onclick="toggleNotif('${n.id}',${!n.active})">${n.active ? "⏸ إيقاف" : "▶ تفعيل"}</button><button class="btn sm danger" onclick="delNotif('${n.id}')">🗑️ حذف</button></div></td></tr>`).join("") || `<tr><td colspan="5" class="empty">لا توجد إشعارات - أرسل أول إشعار من فوق</td></tr>`}</tbody></table></div></div>` };
+};
+async function saveNotif() {
+  const title = $("#nt").value.trim(); if (!title) return alert("اكتب عنوان الإشعار");
+  const url = $("#nl").value.trim(); if (url && !/^https?:\/\//i.test(url)) return alert("الرابط لازم يبدأ بـ https://");
+  const ex = $("#ne").value;
+  act(sb.from("notifications").insert({ title, body: $("#nb").value.trim() || null, kind: $("#nk").value, link_url: url || null, link_text: $("#nlt").value.trim() || null, expires_at: ex ? new Date(ex).toISOString() : null, active: true }), "✓ تم إرسال الإشعار للطلاب");
+}
+const toggleNotif = (id, v) => act(sb.from("notifications").update({ active: v }).eq("id", id), "✓ تم");
+async function delNotif(id) { if (await ask("حذف الإشعار", "هيتشال من عند كل الطلاب.", "", false)) act(sb.from("notifications").delete().eq("id", id)); }
 
 /* ========== تحليل الأسئلة ========== */
 VIEWS.analysis = async () => {
