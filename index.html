@@ -64,7 +64,8 @@ table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:11px 10px
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-const sb = supabase.createClient("https://ejutbpumrnvuoftvwais.supabase.co", "sb_publishable_whwX3xnNzZcNbs90ejhEGA_SiA-gPgZ");
+const SB_URL = "https://ejutbpumrnvuoftvwais.supabase.co", SB_KEY = "sb_publishable_whwX3xnNzZcNbs90ejhEGA_SiA-gPgZ";
+const sb = supabase.createClient(SB_URL, SB_KEY);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const LET = ["أ", "ب", "ج", "د"], AR = "٠١٢٣٤٥٦٧٨٩";
@@ -243,7 +244,8 @@ async function exportStudents() {
 
 const friendlyErr = (m) => /permission denied/i.test(m) ? "ممنوع بسبب صلاحيات الجدول (permission denied).\nشغّل ملف fix-permissions.sql في Supabase SQL Editor.\n\n" + m : /row-level security/i.test(m) ? "حسابك مش أدمن أو صلاحية الجدول ناقصة.\nتأكد إن حسابك role = admin، وشغّل ملف fix-permissions.sql.\n\n" + m : /does not exist|schema cache|Could not find/i.test(m) ? "الجدول غير موجود.\nشغّل ملفات banners.sql و notifications.sql في Supabase.\n\n" + m : m;
 function errModal(msg) { const m = document.createElement("div"); m.className = "modal"; m.innerHTML = `<div><h3 style="color:#b91c1c">⚠️ تعذّر تنفيذ العملية</h3><div style="white-space:pre-wrap;word-break:break-word;line-height:1.8">${esc(friendlyErr(String(msg)))}</div><div class="r"><button class="btn">حسنًا</button></div></div>`; m.onclick = (e) => { if (e.target === m || e.target.closest("button")) m.remove(); }; document.body.appendChild(m); }
-async function act(p, ok = "✓ تم") { let r; try { r = await p; } catch (e) { r = { error: e }; } if (r && r.error) { errModal(r.error.message || r.error); return; } toast(ok); render(); }
+const TIMEOUT = { error: { message: "انتهت المهلة (20 ثانية) - الاتصال بقاعدة البيانات لا يستجيب. أغلق أي صفحات أخرى للوحة التحكم، واعمل Ctrl+F5 وجرّب تاني." } };
+async function act(p, ok = "✓ تم") { let r; try { r = await Promise.race([p, new Promise((res) => setTimeout(() => res(TIMEOUT), 20000))]); } catch (e) { r = { error: e }; } if (r && r.error) { errModal(r.error.message || r.error); return; } toast(ok); render(); }
 const openAttempt = (id) => act(sb.rpc("open_attempt", { p_student: id }), "✓ تم فتح المحاولة");
 async function openAll() {
   if (!(await ask("فتح محاولات", "هيتم فتح محاولة لكل طالب ليس له محاولة حالية. متأكد؟", "", false))) return;
@@ -394,12 +396,30 @@ VIEWS.notifs = async () => {
     <div class="card"><h3>الإشعارات المرسلة (${data.length})</h3><div class="scroll"><table><thead><tr><th>الإشعار</th><th>النوع</th><th>الحالة</th><th>وقت الإرسال</th><th></th></tr></thead><tbody>
     ${data.map((n) => `<tr><td><b>${esc(n.title)}</b>${n.body ? `<br><small style="color:var(--mute)">${esc(n.body)}</small>` : ""}</td><td>${(BSTYLE[n.kind] || BSTYLE.info)[0]} ${(BSTYLE[n.kind] || BSTYLE.info)[1]}</td><td><span class="badge ${live(n) ? "b-done" : "b-none"}">${!n.active ? "متوقف" : live(n) ? "ظاهر للطلاب" : "منتهي"}</span></td><td>${fdate(n.created_at)}</td><td><div class="row"><button class="btn sm alt" onclick="toggleNotif('${n.id}',${!n.active})">${n.active ? "⏸ إيقاف" : "▶ تفعيل"}</button><button class="btn sm danger" onclick="delNotif('${n.id}')">🗑️ حذف</button></div></td></tr>`).join("") || `<tr><td colspan="5" class="empty">لا توجد إشعارات - أرسل أول إشعار من فوق</td></tr>`}</tbody></table></div></div>` };
 };
+/* إرسال مباشر لقاعدة البيانات (بدون انتظار مكتبة الدخول) مع مهلة ورسالة خطأ واضحة */
+const authToken = () => { try { const v = JSON.parse(localStorage.getItem("sb-ejutbpumrnvuoftvwais-auth-token") || "null"); return v?.access_token || v?.currentSession?.access_token || null; } catch (e) { return null; } };
+async function restInsert(table, row, ms = 20000) {
+  const tok = authToken(); if (!tok) return { error: { message: "JWT: لا توجد جلسة دخول - اعمل تسجيل خروج ودخول من جديد" } };
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(SB_URL + "/rest/v1/" + table, { method: "POST", signal: ctl.signal, headers: { apikey: SB_KEY, Authorization: "Bearer " + tok, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(row) });
+    if (r.ok) return { error: null };
+    let m = ""; try { const j = await r.json(); m = j.message || JSON.stringify(j); } catch (e) { m = ""; }
+    return { error: { message: "HTTP " + r.status + ": " + m } };
+  } catch (e) { return { error: { message: e.name === "AbortError" ? TIMEOUT.error.message : "تعذر الاتصال: " + e.message } }; }
+  finally { clearTimeout(t); }
+}
 async function saveNotif() {
   const title = $("#nt").value.trim(); if (!title) return alert("اكتب عنوان الإشعار");
   const url = $("#nl").value.trim(); if (url && !/^https?:\/\//i.test(url)) return alert("الرابط لازم يبدأ بـ https://");
-  const ex = $("#ne").value;
-  { const b = $("#nsend"); if (b) { b.disabled = true; b.textContent = "جارٍ الإرسال..."; } }
-  act(sb.from("notifications").insert({ title, body: $("#nb").value.trim() || null, kind: $("#nk").value, link_url: url || null, link_text: $("#nlt").value.trim() || null, expires_at: ex ? new Date(ex).toISOString() : null, active: true }), "✓ تم إرسال الإشعار للطلاب");
+  const ex = $("#ne").value, btn = $("#nsend");
+  const row = { title, body: $("#nb").value.trim() || null, kind: $("#nk").value, link_url: url || null, link_text: $("#nlt").value.trim() || null, expires_at: ex ? new Date(ex).toISOString() : null, active: true };
+  const reset = () => { if (btn) { btn.disabled = false; btn.textContent = "🔔 إرسال للطلاب"; } };
+  if (btn) { btn.disabled = true; btn.textContent = "جارٍ الإرسال..."; }
+  let r = await restInsert("notifications", row);
+  if (r.error && /JWT|401/.test(r.error.message)) r = await Promise.race([sb.from("notifications").insert(row), new Promise((res) => setTimeout(() => res(TIMEOUT), 15000))]);
+  if (r && r.error) { reset(); errModal(r.error.message || r.error); return; }
+  toast("✓ تم إرسال الإشعار للطلاب"); render();
 }
 const toggleNotif = (id, v) => act(sb.from("notifications").update({ active: v }).eq("id", id), "✓ تم");
 async function delNotif(id) { if (await ask("حذف الإشعار", "هيتشال من عند كل الطلاب.", "", false)) act(sb.from("notifications").delete().eq("id", id)); }
